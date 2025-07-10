@@ -46,7 +46,7 @@ def get_oldest_video_date(channel_id):
     return oldest_video["snippet"]["publishedAt"]
 
 def main():
-    st.title("VTuberデータ自動集計Webアプリ")
+    st.title("VT集計アプリ")
     url = st.text_input("YouTubeチャンネルURLを入力してください（channel/形式）")
     if st.button("集計"):
         if not url:
