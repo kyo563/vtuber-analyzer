@@ -5,7 +5,7 @@ from datetime import datetime
 import io
 import re
 
-API_KEY = "YOUR_API_KEY"
+API_KEY = "AIzaSyCJilGGK0Xj4tRojTkSZdmhHBbFNjHZbD4"
 YOUTUBE = build("youtube", "v3", developerKey=API_KEY)
 
 def get_channel_id_from_url(url):
