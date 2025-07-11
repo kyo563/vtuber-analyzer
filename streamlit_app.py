@@ -65,7 +65,7 @@ def get_playlist_count(channel_id):
 
 def main():
     st.title("VT自動集計アプリ")
-    url = st.text_input("YTチャンネルURLを入力してください（channel/形式）")
+    url = st.text_input("YTチャンネルURLを入力してください（https://www.youtube.com/channel/）")
     if st.button("集計"):
         if not url:
             st.warning("URLを入力してください")
