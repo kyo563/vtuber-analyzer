@@ -57,9 +57,16 @@ def main():
         channel_id = get_channel_id_from_url(url)
         if not channel_id:
             return
-        stats = get_channel_stats(channel_id)
+         stats = get_channel_stats(channel_id)
         published_at = stats["publishedAt"]
-        oldest_date = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+        if not published_at:
+            st.error("チャンネル作成日の取得に失敗しました（publishedAtが空です）。")
+            return
+        try:
+            oldest_date = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+        except Exception as e:
+            st.error(f"日付のフォーマットが不正です: {published_at}")
+            return
         months_active = (datetime.utcnow() - oldest_date).days / 30
         subs_per_month = stats["subscriberCount"] / months_active if months_active > 0 else 0
         subs_per_video = stats["subscriberCount"] / stats["videoCount"] if stats["videoCount"] else 0
