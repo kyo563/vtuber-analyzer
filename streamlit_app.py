@@ -9,7 +9,7 @@ YOUTUBE = build("youtube", "v3", developerKey=API_KEY)
 def get_channel_id_from_url(url):
     if "channel/" in url:
         return url.split("channel/")[1].split("/")[0]
-    st.error("channel/形式のURLのみ対応：https://www.youtube.com/channel/")
+    st.error("channel/形式のURLのみ対応：https://www.youtube.com/channel/xxxxxxxxxx")
     return None
 
 def get_channel_stats(channel_id):
@@ -71,6 +71,7 @@ def main():
         top5_playlists = playlists_sorted[:5]
 
         st.write("### 集計結果")
+        st.write(f"**チャンネルID**: {channel_id}")
         st.write(f"**チャンネル名**: {stats['title']}")
         st.write(f"**登録者数**: {stats['subscriberCount']}")
         st.write(f"**動画本数**: {stats['videoCount']}")
@@ -80,13 +81,14 @@ def main():
         st.write(f"**登録者数/動画**: {round(subs_per_video,2)}")
         st.write(f"**総再生回数**: {stats['viewCount']}")
         st.write(f"**総再生回数/登録者数**: {round(view_per_sub,2)}")
-        st.write(f"**総再生リスト数**: {playlist_count}")
+        st.write(f"**再生リスト数**: {playlist_count}")
+        st.write(f"**URL**: {url}")
 
         st.write("### 動画本数が多い上位5再生リスト")
         for i, pl in enumerate(top5_playlists, 1):
             st.write(f"{i}位: {pl['title']}　→ {pl['count']}本")
 
-                # テキスト出力
+        # テキスト出力
         txt_output = io.StringIO()
         txt_output.write(f"チャンネルID: {channel_id}\n")
         txt_output.write(f"チャンネル名: {stats['title']}\n")
@@ -103,7 +105,6 @@ def main():
         txt_output.write("動画本数が多い上位5再生リスト:\n")
         for i, pl in enumerate(top5_playlists, 1):
             txt_output.write(f"{i}位: {pl['title']}　→ {pl['count']}本\n")
-
 
         st.download_button(
             "TXTダウンロード",
