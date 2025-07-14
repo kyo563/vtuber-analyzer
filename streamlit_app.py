@@ -57,7 +57,7 @@ def main():
         channel_id = get_channel_id_from_url(url)
         if not channel_id:
             return
-         stats = get_channel_stats(channel_id)
+        stats = get_channel_stats(channel_id)
         published_at = stats["publishedAt"]
         if not published_at:
             st.error("チャンネル作成日の取得に失敗しました（publishedAtが空です）。")
