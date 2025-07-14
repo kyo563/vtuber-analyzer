@@ -48,7 +48,7 @@ def get_playlists_with_counts(channel_id):
     return playlists
 
 def main():
-    st.title("VTuberデータ自動集計アプリ（クォータ節約版）")
+    st.title("データ自動集計アプリ")
     url = st.text_input("YouTubeチャンネルURLを入力してください（channel/形式）")
     if st.button("集計"):
         if not url:
