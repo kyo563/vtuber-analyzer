@@ -7,7 +7,6 @@ API_KEY = "AIzaSyCJilGGK0Xj4tRojTkSZdmhHBbFNjHZbD4"
 YOUTUBE = build("youtube", "v3", developerKey=API_KEY)
 
 def get_channel_id_from_url(url_or_id):
-    # チャンネルID形式かURLか判別しIDを抽出
     if url_or_id.startswith("UC") and len(url_or_id) == 24:
         return url_or_id
     elif "channel/" in url_or_id:
@@ -57,7 +56,7 @@ def main():
 
     col1, col2 = st.columns([1, 1])  # 集計ボタンとダウンロードボタン用の2列
 
-    txt_output = None  # 初期化（ダウンロード用）
+    txt_output = None  # 初期化
 
     if col1.button("集計"):
         if not url_or_id:
@@ -90,7 +89,6 @@ def main():
         playlists = get_playlists_with_counts(channel_id)
         playlist_count = len(playlists)
         playlists_sorted = sorted(playlists, key=lambda x: x["count"], reverse=True)
-        # 5件満たない場合は'-'で埋める
         top5_playlists = playlists_sorted[:5]
         while len(top5_playlists) < 5:
             top5_playlists.append({"title": "-", "count": "-"})
@@ -106,12 +104,13 @@ def main():
         playlists_per_video = playlist_count / stats["videoCount"] if stats["videoCount"] else 0
         videos_per_subscriber = stats["videoCount"] / stats["subscriberCount"] if stats["subscriberCount"] else 0
 
-        # テキスト出力用の書き込み（数値のみ）
+        # テキスト出力用の書き込み（画面表示と同じ並び）
         txt_output = io.StringIO()
         txt_output.write(f"{channel_id}\n")
         txt_output.write(f"{stats['title']}\n")
         txt_output.write(f"{stats['subscriberCount']}\n")
         txt_output.write(f"{stats['videoCount']}\n")
+        txt_output.write(f"{oldest_date.strftime('%Y-%m-%d')}\n")
         txt_output.write(f"{round(months_active,2)}\n")
         txt_output.write(f"{round(subs_per_month,2)}\n")
         txt_output.write(f"{round(subs_per_video,2)}\n")
@@ -127,15 +126,6 @@ def main():
         txt_output.write(f"{round(playlists_per_video,5)}\n")
         txt_output.write(f"{round(videos_per_month,2)}\n")
         txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
-
-        # 動画本数が多い上位5再生リストの書き込み（全件分。5件に満たない場合は'-'で補填）
-        txt_output.write("動画本数が多い上位5再生リスト:\n")
-        for i in range(5):
-            if i < len(top5_playlists):
-                pl = top5_playlists[i]
-                txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
-            else:
-                txt_output.write(f"{i+1}位: -\n")
 
         # 画面表示
         st.write("### 集計結果")
