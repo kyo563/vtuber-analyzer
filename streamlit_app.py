@@ -57,7 +57,7 @@ def main():
 
     col1, col2 = st.columns([1, 1])  # 集計ボタンとダウンロードボタン用の2列
 
-    txt_output = io.StringIO()  # ここで作成し、集計ボタン押下時に値を更新予定
+    txt_output = None  # 初期化（ダウンロード用）
 
     if col1.button("集計"):
         if not url_or_id:
@@ -107,34 +107,35 @@ def main():
         videos_per_subscriber = stats["videoCount"] / stats["subscriberCount"] if stats["subscriberCount"] else 0
 
         # テキスト出力用の書き込み（数値のみ）
-txt_output.write(f"{channel_id}\n")
-txt_output.write(f"{stats['title']}\n")
-txt_output.write(f"{stats['subscriberCount']}\n")
-txt_output.write(f"{stats['videoCount']}\n")
-txt_output.write(f"{round(months_active,2)}\n")
-txt_output.write(f"{round(subs_per_month,2)}\n")
-txt_output.write(f"{round(subs_per_video,2)}\n")
-txt_output.write(f"{stats['viewCount']}\n")
-txt_output.write(f"{round(view_per_sub,2)}\n")
-txt_output.write(f"{playlist_count}\n")
-txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
-txt_output.write(f"{round(views_per_video,2)}\n")
-txt_output.write(f"{round(views_per_month,2)}\n")
-txt_output.write(f"{round(subs_per_view,5)}\n")
-txt_output.write(f"{round(subs_per_view_alt,5)}\n")
-txt_output.write(f"{round(subs_per_total_view,5)}\n")
-txt_output.write(f"{round(playlists_per_video,5)}\n")
-txt_output.write(f"{round(videos_per_month,2)}\n")
-txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
+        txt_output = io.StringIO()
+        txt_output.write(f"{channel_id}\n")
+        txt_output.write(f"{stats['title']}\n")
+        txt_output.write(f"{stats['subscriberCount']}\n")
+        txt_output.write(f"{stats['videoCount']}\n")
+        txt_output.write(f"{round(months_active,2)}\n")
+        txt_output.write(f"{round(subs_per_month,2)}\n")
+        txt_output.write(f"{round(subs_per_video,2)}\n")
+        txt_output.write(f"{stats['viewCount']}\n")
+        txt_output.write(f"{round(view_per_sub,2)}\n")
+        txt_output.write(f"{playlist_count}\n")
+        txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
+        txt_output.write(f"{round(views_per_video,2)}\n")
+        txt_output.write(f"{round(views_per_month,2)}\n")
+        txt_output.write(f"{round(subs_per_view,5)}\n")
+        txt_output.write(f"{round(subs_per_view_alt,5)}\n")
+        txt_output.write(f"{round(subs_per_total_view,5)}\n")
+        txt_output.write(f"{round(playlists_per_video,5)}\n")
+        txt_output.write(f"{round(videos_per_month,2)}\n")
+        txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
 
-# 動画本数が多い上位5再生リストの書き込み（全件分。5件に満たない場合は'-'で補填）
-txt_output.write("動画本数が多い上位5再生リスト:\n")
-for i in range(5):
-    if i < len(top5_playlists):
-        pl = top5_playlists[i]
-        txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
-    else:
-        txt_output.write(f"{i+1}位: -\n")
+        # 動画本数が多い上位5再生リストの書き込み（全件分。5件に満たない場合は'-'で補填）
+        txt_output.write("動画本数が多い上位5再生リスト:\n")
+        for i in range(5):
+            if i < len(top5_playlists):
+                pl = top5_playlists[i]
+                txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
+            else:
+                txt_output.write(f"{i+1}位: -\n")
 
         # 画面表示
         st.write("### 集計結果")
@@ -165,11 +166,12 @@ for i in range(5):
             st.write(f"{i}位: {pl['title']}　→ {pl['count']}本")
 
     # ダウンロードボタンは集計ボタンの右カラムに表示
-    col2.download_button(
-        "TXTダウンロード",
-        data=txt_output.getvalue().encode("utf-8"),
-        file_name="vtuber_stats.txt"
-    )
+    if txt_output:
+        col2.download_button(
+            "TXTダウンロード",
+            data=txt_output.getvalue().encode("utf-8"),
+            file_name="vtuber_stats.txt"
+        )
 
 if __name__ == "__main__":
     main()
