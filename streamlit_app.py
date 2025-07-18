@@ -56,7 +56,7 @@ def main():
 
     col1, col2 = st.columns([1, 1])  # 集計ボタンとダウンロードボタン用の2列
 
-    txt_output = None  # 初期化
+    txt_output = None
 
     if col1.button("集計"):
         if not url_or_id:
@@ -104,72 +104,71 @@ def main():
         playlists_per_video = playlist_count / stats["videoCount"] if stats["videoCount"] else 0
         videos_per_subscriber = stats["videoCount"] / stats["subscriberCount"] if stats["subscriberCount"] else 0
 
-       # テキスト出力用の書き込み（画面表示と同じ並び）
-    txt_output = io.StringIO()
-    txt_output.write(f"{channel_id}\n")
-    txt_output.write(f"{stats['title']}\n")
-    txt_output.write(f"{stats['subscriberCount']}\n")
-    txt_output.write(f"{stats['videoCount']}\n")
-    txt_output.write(f"{oldest_date.strftime('%Y-%m-%d')}\n")
-    txt_output.write(f"{round(months_active,2)}\n")
-    txt_output.write(f"{round(subs_per_month,2)}\n")
-    txt_output.write(f"{round(subs_per_video,2)}\n")
-    txt_output.write(f"{stats['viewCount']}\n")
-    txt_output.write(f"{round(view_per_sub,2)}\n")
-    txt_output.write(f"{playlist_count}\n")
-    txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
-    txt_output.write(f"{round(views_per_video,2)}\n")
-    txt_output.write(f"{round(views_per_month,2)}\n")
-    txt_output.write(f"{round(subs_per_view,5)}\n")
-    txt_output.write(f"{round(subs_per_view_alt,5)}\n")
-    txt_output.write(f"{round(subs_per_total_view,5)}\n")
-    txt_output.write(f"{round(playlists_per_video,5)}\n")
-    txt_output.write(f"{round(videos_per_month,2)}\n")
-    txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
+        # テキスト出力用の書き込み（画面表示と同じ並び）
+        txt_output = io.StringIO()
+        txt_output.write(f"{channel_id}\n")
+        txt_output.write(f"{stats['title']}\n")
+        txt_output.write(f"{stats['subscriberCount']}\n")
+        txt_output.write(f"{stats['videoCount']}\n")
+        txt_output.write(f"{oldest_date.strftime('%Y-%m-%d')}\n")
+        txt_output.write(f"{round(months_active,2)}\n")
+        txt_output.write(f"{round(subs_per_month,2)}\n")
+        txt_output.write(f"{round(subs_per_video,2)}\n")
+        txt_output.write(f"{stats['viewCount']}\n")
+        txt_output.write(f"{round(view_per_sub,2)}\n")
+        txt_output.write(f"{playlist_count}\n")
+        txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
+        txt_output.write(f"{round(views_per_video,2)}\n")
+        txt_output.write(f"{round(views_per_month,2)}\n")
+        txt_output.write(f"{round(subs_per_view,5)}\n")
+        txt_output.write(f"{round(subs_per_view_alt,5)}\n")
+        txt_output.write(f"{round(subs_per_total_view,5)}\n")
+        txt_output.write(f"{round(playlists_per_video,5)}\n")
+        txt_output.write(f"{round(videos_per_month,2)}\n")
+        txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
 
-    # ここで上位5再生リストもテキストに書き込む（-埋め込み込み）
-    txt_output.write("動画本数が多い上位5再生リスト:\n")
-    for i in range(5):
-        if i < len(top5_playlists):
-            pl = top5_playlists[i]
-            txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
-        else:
-            txt_output.write(f"{i+1}位: -\n")
+        # 動画本数が多い上位5再生リストの書き込み（-埋め込み込み）
+        txt_output.write("動画本数が多い上位5再生リスト:\n")
+        for i in range(5):
+            if i < len(top5_playlists):
+                pl = top5_playlists[i]
+                txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
+            else:
+                txt_output.write(f"{i+1}位: -\n")
 
-    # 画面表示
-    st.write("### 集計結果")
-    st.write(f"**チャンネルID**: {channel_id}")
-    st.write(f"**チャンネル名**: {stats['title']}")
-    st.write(f"**登録者数**: {stats['subscriberCount']}")
-    st.write(f"**動画本数**: {stats['videoCount']}")
-    st.write(f"**活動開始日**: {oldest_date.strftime('%Y-%m-%d')}")
-    st.write(f"**活動月数**: {round(months_active,2)}")
-    st.write(f"**登録者数/活動月**: {round(subs_per_month,2)}")
-    st.write(f"**登録者数/動画**: {round(subs_per_video,2)}")
-    st.write(f"**総再生回数**: {stats['viewCount']}")
-    st.write(f"**総再生回数/登録者数**: {round(view_per_sub,2)}")
-    st.write(f"**再生リスト数**: {playlist_count}")
-    st.write(f"**動画あたり月間登録者数増加数**: {round(subs_per_month_per_video,5)}")
-    st.write(f"**動画あたり総再生回数**: {round(views_per_video,2)}")
-    st.write(f"**月間再生回数**: {round(views_per_month,2)}")
-    st.write(f"**月間再生回数あたり登録者増加率**: {round(subs_per_view,5)}")
-    st.write(f"**動画あたり再生回数あたり登録者数**: {round(subs_per_view_alt,5)}")
-    st.write(f"**1再生あたり登録者数の伸び率（登録者あたり）**: {round(subs_per_total_view,5)}")
-    st.write(f"**動画あたりプレイリスト数**: {round(playlists_per_video,5)}")
-    st.write(f"**活動月あたり動画本数**: {round(videos_per_month,2)}")
-    st.write(f"**登録者あたり動画本数**: {round(videos_per_subscriber,5)}")
-    st.write(f"**URL**: {url_or_id}")
+        # 画面表示
+        st.write("### 集計結果")
+        st.write(f"**チャンネルID**: {channel_id}")
+        st.write(f"**チャンネル名**: {stats['title']}")
+        st.write(f"**登録者数**: {stats['subscriberCount']}")
+        st.write(f"**動画本数**: {stats['videoCount']}")
+        st.write(f"**活動開始日**: {oldest_date.strftime('%Y-%m-%d')}")
+        st.write(f"**活動月数**: {round(months_active,2)}")
+        st.write(f"**登録者数/活動月**: {round(subs_per_month,2)}")
+        st.write(f"**登録者数/動画**: {round(subs_per_video,2)}")
+        st.write(f"**総再生回数**: {stats['viewCount']}")
+        st.write(f"**総再生回数/登録者数**: {round(view_per_sub,2)}")
+        st.write(f"**再生リスト数**: {playlist_count}")
+        st.write(f"**動画あたり月間登録者数増加数**: {round(subs_per_month_per_video,5)}")
+        st.write(f"**動画あたり総再生回数**: {round(views_per_video,2)}")
+        st.write(f"**月間再生回数**: {round(views_per_month,2)}")
+        st.write(f"**月間再生回数あたり登録者増加率**: {round(subs_per_view,5)}")
+        st.write(f"**動画あたり再生回数あたり登録者数**: {round(subs_per_view_alt,5)}")
+        st.write(f"**1再生あたり登録者数の伸び率（登録者あたり）**: {round(subs_per_total_view,5)}")
+        st.write(f"**動画あたりプレイリスト数**: {round(playlists_per_video,5)}")
+        st.write(f"**活動月あたり動画本数**: {round(videos_per_month,2)}")
+        st.write(f"**登録者あたり動画本数**: {round(videos_per_subscriber,5)}")
+        st.write(f"**URL**: {url_or_id}")
 
-    st.write("### 動画本数が多い上位5再生リスト")
-    for i, pl in enumerate(top5_playlists, 1):
-        st.write(f"{i}位: {pl['title']}　→ {pl['count']}本")
+        st.write("### 動画本数が多い上位5再生リスト")
+        for i, pl in enumerate(top5_playlists, 1):
+            st.write(f"{i}位: {pl['title']}　→ {pl['count']}本")
 
-    # ダウンロードボタンは集計ボタンの右カラムに表示
-    col2.download_button(
-        "TXTダウンロード",
-        data=txt_output.getvalue().encode("utf-8"),
-        file_name="vt_stats.txt"
-    )
+        # ダウンロードボタンは集計ボタンの右カラムに表示
+        col2.download_button(
+            "TXTダウンロード",
+            data=txt_output.getvalue().encode("utf-8"),
+            file_name="vt_stats.txt"
         )
 
 if __name__ == "__main__":
