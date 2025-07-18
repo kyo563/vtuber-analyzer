@@ -6,10 +6,16 @@ import io
 API_KEY = "AIzaSyCJilGGK0Xj4tRojTkSZdmhHBbFNjHZbD4"
 YOUTUBE = build("youtube", "v3", developerKey=API_KEY)
 
-def get_channel_id_from_url(url):
-    if "channel/" in url:
-        return url.split("channel/")[1].split("/")[0]
-    st.error("channel/形式のURLのみ対応：https://www.youtube.com/channel/xxxxxxxxxx")
+def get_channel_id_from_url(url_or_id):
+    """
+    URLの可能性がある文字列からチャンネルIDを抽出。
+    もしくはIDのみが入力された場合はそのまま返す。
+    """
+    if url_or_id.startswith("UC"):  # ほぼ全てのYouTubeチャンネルIDはUCから始まる
+        return url_or_id
+    if "channel/" in url_or_id:
+        return url_or_id.split("channel/")[1].split("/")[0]
+    st.error("channel/形式のURLまたはチャンネルIDを入力してください。例）UCxxxxxxxxxxxx")
     return None
 
 def get_channel_stats(channel_id):
@@ -49,12 +55,12 @@ def get_playlists_with_counts(channel_id):
 
 def main():
     st.title("データ自動集計アプリ")
-    url = st.text_input("YouTubeチャンネルURLを入力してください（channel/形式）")
+    url_or_id = st.text_input("YouTubeチャンネルURLまたはチャンネルIDを入力してください")
     if st.button("集計"):
-        if not url:
-            st.warning("URLを入力してください")
+        if not url_or_id:
+            st.warning("URLまたはチャンネルIDを入力してください")
             return
-        channel_id = get_channel_id_from_url(url)
+        channel_id = get_channel_id_from_url(url_or_id)
         if not channel_id:
             return
         stats = get_channel_stats(channel_id)
@@ -62,7 +68,6 @@ def main():
         if not published_at:
             st.error("チャンネル作成日の取得に失敗しました（publishedAtが空です）。")
             return
-        # 日付のミリ秒あり・なし両対応
         try:
             oldest_date = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
@@ -75,6 +80,7 @@ def main():
         months_active = (datetime.utcnow() - oldest_date).days / 30
         subs_per_month = stats["subscriberCount"] / months_active if months_active > 0 else 0
         subs_per_video = stats["subscriberCount"] / stats["videoCount"] if stats["videoCount"] else 0
+        subs_per_month_per_video = subs_per_month / stats["videoCount"] if stats["videoCount"] else 0
         view_per_sub = stats["viewCount"] / stats["subscriberCount"] if stats["subscriberCount"] else 0
 
         playlists = get_playlists_with_counts(channel_id)
@@ -82,19 +88,24 @@ def main():
         playlists_sorted = sorted(playlists, key=lambda x: x["count"], reverse=True)
         top5_playlists = playlists_sorted[:5]
 
+        # 5件未満の場合は「-」を補填
+        while len(top5_playlists) < 5:
+            top5_playlists.append({"title": "-", "count": "-"})
+
         st.write("### 集計結果")
         st.write(f"**チャンネルID**: {channel_id}")
         st.write(f"**チャンネル名**: {stats['title']}")
         st.write(f"**登録者数**: {stats['subscriberCount']}")
         st.write(f"**動画本数**: {stats['videoCount']}")
-        st.write(f"**活動開始日**: {oldest_date.strftime('%Y-%m-%d')}")
+        # 活動開始日はテキスト出力から省くため、ここは表示しない
         st.write(f"**活動月数**: {round(months_active,2)}")
         st.write(f"**登録者数/活動月**: {round(subs_per_month,2)}")
         st.write(f"**登録者数/動画**: {round(subs_per_video,2)}")
+        st.write(f"**動画あたり月間登録者数増加数**: {round(subs_per_month_per_video,2)}")
         st.write(f"**総再生回数**: {stats['viewCount']}")
         st.write(f"**総再生回数/登録者数**: {round(view_per_sub,2)}")
         st.write(f"**再生リスト数**: {playlist_count}")
-        st.write(f"**URL**: {url}")
+        st.write(f"**URL**: https://www.youtube.com/channel/{channel_id}")
 
         st.write("### 動画本数が多い上位5再生リスト")
         for i, pl in enumerate(top5_playlists, 1):
@@ -102,18 +113,18 @@ def main():
 
         # テキスト出力
         txt_output = io.StringIO()
-        txt_output.write(f"チャンネルID: {channel_id}\n")
-        txt_output.write(f"チャンネル名: {stats['title']}\n")
-        txt_output.write(f"登録者数: {stats['subscriberCount']}\n")
-        txt_output.write(f"動画本数: {stats['videoCount']}\n")
-        txt_output.write(f"活動開始日: {oldest_date.strftime('%Y-%m-%d')}\n")
-        txt_output.write(f"活動月数: {round(months_active,2)}\n")
-        txt_output.write(f"登録者数/活動月: {round(subs_per_month,2)}\n")
-        txt_output.write(f"登録者数/動画: {round(subs_per_video,2)}\n")
-        txt_output.write(f"総再生回数: {stats['viewCount']}\n")
-        txt_output.write(f"総再生回数/登録者数: {round(view_per_sub,2)}\n")
-        txt_output.write(f"再生リスト数: {playlist_count}\n")
-        txt_output.write(f"URL: {url}\n\n")
+        txt_output.write(f"{channel_id}\n")
+        txt_output.write(f"{stats['title']}\n")
+        txt_output.write(f"{stats['subscriberCount']}\n")
+        txt_output.write(f"{stats['videoCount']}\n")
+        txt_output.write(f"{round(months_active,2)}\n")
+        txt_output.write(f"{round(subs_per_month,2)}\n")
+        txt_output.write(f"{round(subs_per_video,2)}\n")
+        txt_output.write(f"{round(subs_per_month_per_video,2)}\n")
+        txt_output.write(f"{stats['viewCount']}\n")
+        txt_output.write(f"{round(view_per_sub,2)}\n")
+        txt_output.write(f"{playlist_count}\n")
+        txt_output.write(f"https://www.youtube.com/channel/{channel_id}\n\n")
         txt_output.write("動画本数が多い上位5再生リスト:\n")
         for i, pl in enumerate(top5_playlists, 1):
             txt_output.write(f"{i}位: {pl['title']}　→ {pl['count']}本\n")
@@ -121,7 +132,7 @@ def main():
         st.download_button(
             "TXTダウンロード",
             data=txt_output.getvalue().encode("utf-8"),
-            file_name="vtuber_stats.txt"
+            file_name="vt_stats.txt"
         )
 
 if __name__ == "__main__":
