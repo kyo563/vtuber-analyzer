@@ -106,26 +106,35 @@ def main():
         playlists_per_video = playlist_count / stats["videoCount"] if stats["videoCount"] else 0
         videos_per_subscriber = stats["videoCount"] / stats["subscriberCount"] if stats["subscriberCount"] else 0
 
-        # テキスト出力作成（説明なしの数値のみ）
-        txt_output.write(f"{channel_id}\n")
-        txt_output.write(f"{stats['title']}\n")
-        txt_output.write(f"{stats['subscriberCount']}\n")
-        txt_output.write(f"{stats['videoCount']}\n")
-        txt_output.write(f"{round(months_active,2)}\n")
-        txt_output.write(f"{round(subs_per_month,2)}\n")
-        txt_output.write(f"{round(subs_per_video,2)}\n")
-        txt_output.write(f"{stats['viewCount']}\n")
-        txt_output.write(f"{round(view_per_sub,2)}\n")
-        txt_output.write(f"{playlist_count}\n")
-        txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
-        txt_output.write(f"{round(views_per_video,2)}\n")
-        txt_output.write(f"{round(views_per_month,2)}\n")
-        txt_output.write(f"{round(subs_per_view,5)}\n")
-        txt_output.write(f"{round(subs_per_view_alt,5)}\n")
-        txt_output.write(f"{round(subs_per_total_view,5)}\n")
-        txt_output.write(f"{round(playlists_per_video,5)}\n")
-        txt_output.write(f"{round(videos_per_month,2)}\n")
-        txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
+        # テキスト出力用の書き込み（数値のみ）
+txt_output.write(f"{channel_id}\n")
+txt_output.write(f"{stats['title']}\n")
+txt_output.write(f"{stats['subscriberCount']}\n")
+txt_output.write(f"{stats['videoCount']}\n")
+txt_output.write(f"{round(months_active,2)}\n")
+txt_output.write(f"{round(subs_per_month,2)}\n")
+txt_output.write(f"{round(subs_per_video,2)}\n")
+txt_output.write(f"{stats['viewCount']}\n")
+txt_output.write(f"{round(view_per_sub,2)}\n")
+txt_output.write(f"{playlist_count}\n")
+txt_output.write(f"{round(subs_per_month_per_video,5)}\n")
+txt_output.write(f"{round(views_per_video,2)}\n")
+txt_output.write(f"{round(views_per_month,2)}\n")
+txt_output.write(f"{round(subs_per_view,5)}\n")
+txt_output.write(f"{round(subs_per_view_alt,5)}\n")
+txt_output.write(f"{round(subs_per_total_view,5)}\n")
+txt_output.write(f"{round(playlists_per_video,5)}\n")
+txt_output.write(f"{round(videos_per_month,2)}\n")
+txt_output.write(f"{round(videos_per_subscriber,5)}\n\n")
+
+# 動画本数が多い上位5再生リストの書き込み（全件分。5件に満たない場合は'-'で補填）
+txt_output.write("動画本数が多い上位5再生リスト:\n")
+for i in range(5):
+    if i < len(top5_playlists):
+        pl = top5_playlists[i]
+        txt_output.write(f"{i+1}位: {pl['title']}　→ {pl['count']}本\n")
+    else:
+        txt_output.write(f"{i+1}位: -\n")
 
         # 画面表示
         st.write("### 集計結果")
