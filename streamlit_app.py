@@ -1,10 +1,11 @@
-# streamlit_app.py — 集計を統合し上位プレイリストの上に表示する版
+# streamlit_app.py — 上部にTXTダウンロード（集計ボタンの右）を配置する版
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
+import io
 
-st.set_page_config(page_title="YouTube チャンネル解析ツール", layout="wide")
+st.set_page_config(page_title="解析ツール", layout="wide")
 
 # APIキー（推奨：Streamlit secrets に YOUTUBE_API_KEY を設定）
 API_KEY = st.secrets.get("YOUTUBE_API_KEY") if "YOUTUBE_API_KEY" in st.secrets else None
@@ -18,7 +19,7 @@ def get_youtube_client():
         raise RuntimeError("YouTube API key is not configured.")
     return build("youtube", "v3", developerKey=API_KEY)
 
-# ヘルパー関数（キャッシュ付き、youtube client は内部で取得）
+# ヘルパー関数（キャッシュ付き）
 @st.cache_data(ttl=3600)
 def resolve_channel_id_simple(url_or_id: str) -> Optional[str]:
     youtube = get_youtube_client()
@@ -147,13 +148,23 @@ def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[
     return items
 
 # UI / Main
-st.title("YouTube チャンネル解析ツール")
-st.markdown("チャンネルID または チャンネルURL、ハンドル、表示名を入力してください。")
+st.title("解析ツール")
+st.markdown("ID")
 
-col_input, col_info = st.columns([3, 1])
+# top row: input | buttons (集計 + ダウンロード) | info
+col_input, col_buttons, col_info = st.columns([3, 1, 1])
 with col_input:
-    url_or_id = st.text_input("チャンネル URL / ID / 表示名 を入力")
+    url_or_id = st.text_input("URL / ID / 表示名 を入力")
+
+# 集計ボタン（左）とダウンロードボタン（右）を同じカラムに横並び風に表示
+with col_buttons:
     run_btn = st.button("集計")
+    # ダウンロードボタンはセッションに保存されたテキストがあれば表示
+    last_txt = st.session_state.get("last_txt") if "last_txt" in st.session_state else None
+    if last_txt:
+        st.download_button("TXTダウンロード", data=last_txt.encode("utf-8"), file_name="vt_stats.txt")
+    else:
+        st.write("")  # プレースホルダ（何も表示しない）
 
 with col_info:
     st.write("動作メモ")
@@ -239,7 +250,7 @@ if run_btn:
     subs_per_month_per_video = round((subs_per_month / vids_total), 5) if vids_total and vids_total > 0 else 0.0
     views_per_month = round((views_total / months_active), 2) if months_active and months_active > 0 else 0.0
 
-    # 表示（簡潔ラベル）
+    # --- 表示（簡潔ラベル） ---
     st.header("集計結果")
     col1, col2 = st.columns([2, 2])
 
@@ -289,3 +300,45 @@ if run_btn:
         st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
         st.write("- 正確な期間増分を取得するには YouTube Analytics API（OAuth）が必要です。")
         st.write("- キャッシュTTLは各関数のデコレータで調整できます。長めにすればクォータ消費を抑えられます。")
+
+    # TXT ダウンロード用（結果のみを順番に出力） — セッションに保存して上部からダウンロード可能にする
+    txt_output = io.StringIO()
+    # 基本情報（結果のみ、順序通り）
+    txt_output.write(f"{data_date}\n")
+    txt_output.write(f"{channel_id}\n")
+    txt_output.write(f"{basic.get('title') or ''}\n")
+    txt_output.write(f"{subs}\n")
+    txt_output.write(f"{vids_total}\n")
+    txt_output.write(f"{views_total}\n")
+    txt_output.write(f"{published_dt.strftime('%Y-%m-%d') if published_dt else ''}\n")
+    txt_output.write(f"{months_active if months_active is not None else ''}\n")
+
+    # 集計
+    txt_output.write(f"{subs_per_month}\n")
+    txt_output.write(f"{subs_per_video}\n")
+    txt_output.write(f"{views_per_video}\n")
+    txt_output.write(f"{views_per_sub}\n")
+    txt_output.write(f"{subs_per_total_view}\n")
+    txt_output.write(f"{playlists_per_video}\n")
+    txt_output.write(f"{videos_per_month}\n")
+    txt_output.write(f"{videos_per_subscriber}\n")
+
+    # 上位プレイリスト（タイトルと件数）
+    for pl in top5_playlists:
+        txt_output.write(f"{pl.get('title','')}\t{pl.get('itemCount','')}\n")
+
+    # 直近指標
+    txt_output.write(f"{total_views_last10}\n")
+    txt_output.write(f"{num_videos_last10}\n")
+    txt_output.write(f"{top_views_last10}\n")
+    txt_output.write(f"{top_share_last10}\n")
+    txt_output.write(f"{avg_views_per_video_last10}\n")
+    txt_output.write(f"{total_views_last30}\n")
+    txt_output.write(f"{views_per_sub_last30}\n")
+
+    # セッション保存（上部ダウンロードボタンで参照される）
+    st.session_state["last_txt"] = txt_output.getvalue()
+
+    # ページの上部にあるダウンロードボタンはセッションを参照しているため、
+    # 集計実行後はページ全体が再レンダリングされれば上部にダウンロードが表示されます。
+    st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
