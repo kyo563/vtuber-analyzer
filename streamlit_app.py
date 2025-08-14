@@ -290,8 +290,9 @@ if run_btn:
 
         # 上位プレイリスト（件数順）
         st.subheader("上位プレイリスト（件数順）")
-        for i, pl in enumerate(top5_playlists, start=1):
-            st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
+      for pl in top5_playlists:
+    title = (pl.get("title", "") or "").replace("\n", " ").strip()
+    txt_output.write(f"{title}→{pl.get('itemCount','')}\n")
 
     with col2:
         # 右カラムには直近指標と補助情報を表示（指定の順序で）
@@ -362,3 +363,4 @@ if run_btn:
     st.session_state["last_txt"] = txt_output.getvalue()
 
     st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
+
