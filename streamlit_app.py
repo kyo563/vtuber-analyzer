@@ -1,4 +1,4 @@
-# streamlit_app.py — 上位プレイリスト（件数順）を復活させた版（修正版：重複表示削除）
+# streamlit_app.py — 集計を統合し上位プレイリストの上に表示する版
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -253,40 +253,39 @@ if run_btn:
         st.write(f"総再生回数: {views_total}")
         st.write(f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}")
         st.write(f"活動月数: {months_active if months_active is not None else '-'}")
-        st.write(f"再生リスト数: {playlist_count}")
 
-        # 復活させた箇所：上位プレイリスト（件数順）
+        # 統合された集計（ここを上位プレイリストより上に表示）
+        st.subheader("集計")
+        st.write(f"累計登録者数/活動月: {subs_per_month}")
+        st.write(f"累計登録者数/動画: {subs_per_video}")
+        st.write(f"累計動画あたり総再生回数: {views_per_video}")
+        st.write(f"累計総再生回数/登録者数: {views_per_sub}")
+        st.write(f"1再生あたり登録者増: {subs_per_total_view}")
+        st.write(f"動画あたりプレイリスト数: {playlists_per_video}")
+        st.write(f"活動月あたり動画本数: {videos_per_month}")
+        st.write(f"登録者あたり動画本数: {videos_per_subscriber}")
+
+        # 上位プレイリスト（件数順）
         st.subheader("上位プレイリスト（件数順）")
         for i, pl in enumerate(top5_playlists, start=1):
             st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
 
     with col2:
-        st.subheader("集計系")
-        st.write(f"累計登録者数/活動月: {subs_per_month}")
-        st.write(f"累計登録者数/動画: {subs_per_video}")
-        st.write(f"累計動画あたり総再生回数: {views_per_video}")
+        # 右カラムには直近指標と補助情報を表示
+        st.subheader("直近指標")
+        st.write(f"直近10日 合計再生数: {total_views_last10}")
+        st.write(f"直近10日 投稿数: {num_videos_last10}")
+        st.write("直近10日 トップ動画:")
+        if top_video_id:
+            st.write(f"- views: {top_views_last10} | share: {top_share_last10:.4f}")
+        else:
+            st.write("- 該当する直近10日間の公開動画がありません。")
+        st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
+        st.write(f"直近30日 合計再生数: {total_views_last30}")
+        st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
 
-    st.subheader("効率・比率")
-    st.write(f"累計総再生回数/登録者数: {views_per_sub}")
-    st.write(f"1再生あたり登録者増: {subs_per_total_view}")
-    st.write(f"動画あたりプレイリスト数: {playlists_per_video}")
-    st.write(f"活動月あたり動画本数: {videos_per_month}")
-    st.write(f"登録者あたり動画本数: {videos_per_subscriber}")
-
-    st.subheader("直近指標")
-    st.write(f"直近10日 合計再生数: {total_views_last10}")
-    st.write(f"直近10日 投稿数: {num_videos_last10}")
-    st.write("直近10日 トップ動画:")
-    if top_video_id:
-        st.write(f"- views: {top_views_last10} | share: {top_share_last10:.4f}")
-    else:
-        st.write("- 該当する直近10日間の公開動画がありません。")
-    st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
-    st.write(f"直近30日 合計再生数: {total_views_last30}")
-    st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
-
-    st.markdown("---")
-    st.write("運用メモ:")
-    st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
-    st.write("- 正確な期間増分を取得するには YouTube Analytics API（OAuth）が必要です。")
-    st.write("- キャッシュTTLは各関数のデコレータで調整できます。長めにすればクォータ消費を抑えられます。")
+        st.markdown("---")
+        st.write("運用メモ:")
+        st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
+        st.write("- 正確な期間増分を取得するには YouTube Analytics API（OAuth）が必要です。")
+        st.write("- キャッシュTTLは各関数のデコレータで調整できます。長めにすればクォータ消費を抑えられます。")
