@@ -149,7 +149,6 @@ def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[
 
 # UI / Main
 st.title("解析ツール")
-st.markdown("ID入力")
 
 # top row: input | buttons (集計 + ダウンロード) | info
 col_input, col_buttons, col_info = st.columns([3, 1, 1])
@@ -306,7 +305,7 @@ if run_btn:
             st.write("- 該当する直近10日間の公開動画がありません。")
         st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
         st.write(f"直近10日 視聴/登録比: {views_per_sub_last10}")
-
+ st.markdown("---")
         st.write(f"直近30日 合計再生数: {total_views_last30}")
         st.write(f"直近30日 投稿数: {num_videos_last30}")
         st.write("直近30日 トップ動画:")
@@ -317,11 +316,7 @@ if run_btn:
         st.write(f"直近30日 平均再生: {avg_views_per_video_last30}")
         st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
 
-        st.markdown("---")
-        st.write("運用メモ:")
-        st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
-        st.write("- 正確な期間増分を取得するには YouTube Analytics API（OAuth）が必要です。")
-        st.write("- キャッシュTTLは各関数のデコレータで調整できます。長めにすればクォータ消費を抑えられます。")
+    
 
     # TXT ダウンロード用（結果のみを順番に出力） — セッションに保存して上部からダウンロード可能にする
     txt_output = io.StringIO()
@@ -369,3 +364,4 @@ if run_btn:
     st.session_state["last_txt"] = txt_output.getvalue()
 
     st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
+
