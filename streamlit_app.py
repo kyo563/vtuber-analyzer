@@ -359,7 +359,11 @@ if run_btn:
     txt_output.write(f"{avg_views_per_video_last30}\n")
     txt_output.write(f"{views_per_sub_last30}\n")
 
-    # セッション保存（上部ダウンロードボタンで参照される）
+     # セッション保存（上部ダウンロードボタンで参照される）
     st.session_state["last_txt"] = txt_output.getvalue()
 
+    # これを追加する（必ず最後に呼ぶ）
+    st.experimental_rerun()
+
     st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
+
