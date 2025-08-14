@@ -1,4 +1,4 @@
-# streamlit_app.py — 表示ラベルを簡潔化した版（括弧内説明と※を全削除）
+# streamlit_app.py — 上位プレイリスト（件数順）を復活させた版
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -255,6 +255,7 @@ if run_btn:
         st.write(f"活動月数: {months_active if months_active is not None else '-'}")
         st.write(f"再生リスト数: {playlist_count}")
 
+
     with col2:
         st.subheader("集計系")
         st.write(f"累計登録者数/活動月: {subs_per_month}")
@@ -280,6 +281,11 @@ if run_btn:
     st.write(f"直近30日 合計再生数: {total_views_last30}")
     st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
 
+ # 上位プレイリスト（件数順）
+        st.subheader("上位プレイリスト（件数順）")
+        for i, pl in enumerate(top5_playlists, start=1):
+            st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
+  
     st.markdown("---")
     st.write("運用メモ:")
     st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
