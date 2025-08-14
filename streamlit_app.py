@@ -1,4 +1,4 @@
-# streamlit_app.py — 修正版：直近指標のインデント修正済み（全文）
+# streamlit_app.py — 修正版（上位プレイリストは表示、TXTはタイトル→本数で出力）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -288,11 +288,10 @@ if run_btn:
         st.write(f"活動月あたり動画本数: {videos_per_month}")
         st.write(f"登録者あたり動画本数: {videos_per_subscriber}")
 
-        # 上位プレイリスト（件数順）
+        # 上位プレイリスト（件数順） — 画面表示
         st.subheader("上位プレイリスト（件数順）")
-    for pl in top5_playlists:
-        title = (pl.get("title", "") or "").replace("\n", " ").strip()
-        txt_output.write(f"{title}→{pl.get('itemCount','')}\n")
+        for i, pl in enumerate(top5_playlists, start=1):
+            st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
 
     with col2:
         # 右カラムには直近指標と補助情報を表示（指定の順序で）
@@ -339,9 +338,10 @@ if run_btn:
     txt_output.write(f"{videos_per_month}\n")
     txt_output.write(f"{videos_per_subscriber}\n")
 
-    # 上位プレイリスト（タイトルと件数）
+    # 上位プレイリスト（タイトル→本数） を1行文字列で出力（改行を除去して整形）
     for pl in top5_playlists:
-        txt_output.write(f"{pl.get('title','')}\t{pl.get('itemCount','')}\n")
+        title = (pl.get("title", "") or "").replace("\n", " ").strip()
+        txt_output.write(f"{title}→{pl.get('itemCount','')}\n")
 
     # 直近指標（10日）
     txt_output.write(f"{total_views_last10}\n")
@@ -362,6 +362,4 @@ if run_btn:
     # セッション保存（上部ダウンロードボタンで参照される）
     st.session_state["last_txt"] = txt_output.getvalue()
 
-    st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
-
-
+    st.success("集計が完了しました。")
