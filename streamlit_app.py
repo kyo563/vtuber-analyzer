@@ -1,4 +1,4 @@
-# app.py (修正版)
+# streamlit_app.py (修正版・全文)
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -7,7 +7,7 @@ from typing import List, Dict, Optional
 
 st.set_page_config(page_title="YouTube チャンネル解析ツール (修正版)", layout="wide")
 
-# APIキー取得（推薦：st.secrets に YOUTUBE_API_KEY を入れる）
+# --- APIキー取得 ---
 API_KEY = st.secrets.get("YOUTUBE_API_KEY") if "YOUTUBE_API_KEY" in st.secrets else None
 if not API_KEY:
     API_KEY = st.sidebar.text_input("YouTube API Key (一時入力可)", type="password")
@@ -15,6 +15,7 @@ if not API_KEY:
 def build_youtube(api_key: str):
     return build("youtube", "v3", developerKey=api_key)
 
+# --- ヘルパー関数（キャッシュあり） ---
 @st.cache_data(ttl=3600)
 def resolve_channel_id_simple(youtube_service, url_or_id: str) -> Optional[str]:
     s = (url_or_id or "").strip()
@@ -136,7 +137,7 @@ def fetch_playlist_items_sample(youtube_service, playlist_id: str, max_items: in
         pass
     return items
 
-# UI
+# --- UI ---
 st.title("YouTube チャンネル解析ツール（直近指標 + プレイリスト展開）")
 st.markdown("チャンネルID（UC...）またはチャンネルURL、ハンドル、表示名を入力してください。直近10日/30日の指標と、プレイリスト展開を行います。")
 
@@ -189,44 +190,4 @@ if run_btn:
     total_views_last10 = sum(v.get("viewCount", 0) for v in stats_10.values())
     num_videos_last10 = len(stats_10)
 
-    video_ids_30 = search_video_ids_published_after(youtube, channel_id, 30)
-    stats_30 = get_videos_stats(youtube, video_ids_30) if video_ids_30 else {}
-    total_views_last30 = sum(v.get("viewCount", 0) for v in stats_30.values())
-    num_videos_last30 = len(stats_30)
-
-    if num_videos_last10 > 0:
-        top_vid_10 = max(stats_10.items(), key=lambda kv: kv[1]["viewCount"])
-        top_video_id = top_vid_10[0]
-        top_info = top_vid_10[1]
-        top_views_last10 = top_info["viewCount"]
-        top_title_last10 = top_info["title"] or "(title unavailable)"
-        top_url_last10 = f"https://www.youtube.com/watch?v={top_video_id}"
-        top_share_last10 = round((top_views_last10 / total_views_last10) if total_views_last10 > 0 else 0.0, 4)
-    else:
-        top_video_id = None
-        top_title_last10 = "-"
-        top_views_last10 = 0
-        top_url_last10 = "-"
-        top_share_last10 = 0.0
-
-    views_per_sub_last30 = round((total_views_last30 / subs), 5) if subs > 0 else 0.0
-    avg_views_per_video_last10 = round((total_views_last10 / num_videos_last10), 2) if num_videos_last10 > 0 else 0.0
-
-    playlists_meta = get_playlists_meta(youtube, channel_id)
-    playlist_count = len(playlists_meta)
-    playlists_sorted = sorted(playlists_meta, key=lambda x: x["itemCount"], reverse=True)
-    top5_playlists = playlists_sorted[:5]
-    while len(top5_playlists) < 5:
-        top5_playlists.append({"title": "-", "itemCount": "-"})
-
-    colA, colB = st.columns([2, 2])
-
-    with colA:
-        st.write("### 基本情報")
-        st.write(f"**チャンネル名**: {basic.get('title')}")
-        st.write(f"**登録者数**: {subs}")
-        st.write(f"**動画本数**: {vids_total}")
-        st.write(f"**総再生回数**: {views_total}")
-        st.write(f"**活動開始日**: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}")
-        st.write(f"**活動月数**: {months_active if months_active is not None else '-'}")
-        st.write(f"**再生リスト数**: {playlist_count}"_
+    video_ids_30 = search_video_ids_pub_
