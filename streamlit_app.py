@@ -1,4 +1,4 @@
-# streamlit_app.py — Streamlit 表示版（TXT出力を無視して画面に表示）
+# streamlit_app.py — 「直近10日 トップ動画（views・シェア）」表示版（全文）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -208,20 +208,16 @@ if run_btn:
     total_views_last30 = sum(v.get("viewCount", 0) for v in stats_30.values())
     num_videos_last30 = len(stats_30)
 
-    # 直近10日のトップ動画
+    # 直近10日のトップ動画（views と share のみを表示するため、title/URLは表示しない）
     if num_videos_last10 > 0:
         top_vid_10 = max(stats_10.items(), key=lambda kv: kv[1]["viewCount"])
         top_video_id = top_vid_10[0]
         top_info = top_vid_10[1]
         top_views_last10 = top_info["viewCount"]
-        top_title_last10 = top_info["title"] or "(title unavailable)"
-        top_url_last10 = f"https://www.youtube.com/watch?v={top_video_id}"
         top_share_last10 = round((top_views_last10 / total_views_last10) if total_views_last10 > 0 else 0.0, 4)
     else:
         top_video_id = None
-        top_title_last10 = "-"
         top_views_last10 = 0
-        top_url_last10 = "-"
         top_share_last10 = 0.0
 
     # 代替・効率指標
@@ -279,9 +275,9 @@ if run_btn:
     st.subheader("直近指標（公開日フィルターベース）")
     st.write(f"直近10日 合計再生数（total_views_last10・公開された動画のみ）: {total_views_last10}")
     st.write(f"直近10日 投稿数（num_videos_last10）: {num_videos_last10}")
-    st.write(f"直近10日 トップ動画（タイトル・URL・views・シェア）:")
+    st.write(f"直近10日 トップ動画（views・シェア）:")
     if top_video_id:
-        st.write(f"- {top_title_last10} | {top_url_last10} | views: {top_views_last10} | share: {top_share_last10:.4f}")
+        st.write(f"- views: {top_views_last10} | share: {top_share_last10:.4f}")
     else:
         st.write("- 該当する直近10日間の公開動画がありません。")
     st.write(f"直近10日 平均再生（avg_views_per_video_last10）: {avg_views_per_video_last10}")
