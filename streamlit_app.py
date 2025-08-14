@@ -1,11 +1,11 @@
-# streamlit_app.py — 修正版（全文）
+# streamlit_app.py — Streamlit 表示版（TXT出力を無視して画面に表示）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
-import io
 from typing import List, Dict, Optional, Tuple
+import io
 
-st.set_page_config(page_title="YouTube チャンネル解析ツール", layout="wide")
+st.set_page_config(page_title="YouTube チャンネル解析ツール（表示版）", layout="wide")
 
 # --- APIキー（推奨：Streamlit secrets に YOUTUBE_API_KEY を設定） ---
 API_KEY = st.secrets.get("YOUTUBE_API_KEY") if "YOUTUBE_API_KEY" in st.secrets else None
@@ -19,7 +19,7 @@ def get_youtube_client():
         raise RuntimeError("YouTube API key is not configured.")
     return build("youtube", "v3", developerKey=API_KEY)
 
-# --- ヘルパー関数（キャッシュ付き、youtubeオブジェクトは内部取得） ---
+# --- ヘルパー関数（キャッシュ付き、youtube client は内部で取得） ---
 @st.cache_data(ttl=3600)
 def resolve_channel_id_simple(url_or_id: str) -> Optional[str]:
     youtube = get_youtube_client()
@@ -122,6 +122,7 @@ def get_videos_stats(video_ids: Tuple[str, ...]) -> Dict[str, Dict]:
             continue
     return out
 
+# fetch_playlist_items_sample を残すが UI 呼び出しはしない（将来利用）
 @st.cache_data(ttl=300)
 def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[Dict]:
     youtube = get_youtube_client()
@@ -150,8 +151,8 @@ def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[
 # --------------------
 # UI / Main
 # --------------------
-st.title("YouTube チャンネル解析ツール（直近指標 + プレイリスト展開）")
-st.markdown("チャンネルID（UC...）またはチャンネルURL、ハンドル、表示名を入力してください。直近10日/30日の指標と、プレイリスト展開を行います。")
+st.title("YouTube チャンネル解析ツール（表示版）")
+st.markdown("チャンネルID（UC...）またはチャンネルURL、ハンドル、表示名を入力してください。直近10日/30日の指標を画面に表示します。")
 
 col_input, col_info = st.columns([3, 1])
 with col_input:
@@ -161,8 +162,7 @@ with col_input:
 with col_info:
     st.write("動作メモ")
     st.write("- APIキーは Streamlit secrets に設定してください。")
-    st.write("- プレイリストの中身はクリック時に取得します（遅延取得）。")
-    st.write("- クォータ節約のためキャッシュを使っています。")
+    st.write("- クォータ節約のためキャッシュを活用しています。")
 
 if run_btn:
     if not API_KEY:
@@ -174,13 +174,15 @@ if run_btn:
         st.error("チャンネルIDを解決できませんでした。正しい URL / ID / 表示名 を確認してください。")
         st.stop()
 
-    st.write(f"解析対象チャンネルID: {channel_id}")
-
     basic = get_channel_basic(channel_id)
     if not basic:
         st.error("チャンネル情報の取得に失敗しました。")
         st.stop()
 
+    # 日付（データ取得日）
+    data_date = datetime.utcnow().strftime("%Y/%m/%d")
+
+    # publishedAt -> datetime
     published_at_raw = basic.get("publishedAt")
     published_dt = None
     if published_at_raw:
@@ -195,6 +197,7 @@ if run_btn:
     vids_total = basic.get("videoCount", 0)
     views_total = basic.get("viewCount", 0)
 
+    # 直近10日・30日の動画ID を取得して stats をまとめる
     ids_10 = search_video_ids_published_after(channel_id, 10)
     stats_10 = get_videos_stats(tuple(ids_10)) if ids_10 else {}
     total_views_last10 = sum(v.get("viewCount", 0) for v in stats_10.values())
@@ -205,6 +208,7 @@ if run_btn:
     total_views_last30 = sum(v.get("viewCount", 0) for v in stats_30.values())
     num_videos_last30 = len(stats_30)
 
+    # 直近10日のトップ動画
     if num_videos_last10 > 0:
         top_vid_10 = max(stats_10.items(), key=lambda kv: kv[1]["viewCount"])
         top_video_id = top_vid_10[0]
@@ -220,6 +224,11 @@ if run_btn:
         top_url_last10 = "-"
         top_share_last10 = 0.0
 
+    # 代替・効率指標
+    views_per_sub = round((views_total / subs), 2) if subs > 0 else 0.0
+    subs_per_total_view = round((subs / views_total), 5) if views_total and views_total > 0 else 0.0
+    views_per_video = round((views_total / vids_total), 2) if vids_total and vids_total > 0 else 0.0
+
     views_per_sub_last30 = round((total_views_last30 / subs), 5) if subs > 0 else 0.0
     avg_views_per_video_last10 = round((total_views_last10 / num_videos_last10), 2) if num_videos_last10 > 0 else 0.0
 
@@ -230,105 +239,57 @@ if run_btn:
     while len(top5_playlists) < 5:
         top5_playlists.append({"title": "-", "itemCount": "-"})
 
-    colA, colB = st.columns([2, 2])
-
-    with colA:
-        st.write("### 基本情報")
-        st.write(f"チャンネル名: {basic.get('title')}")
-        st.write(f"登録者数: {subs}")
-        st.write(f"動画本数: {vids_total}")
-        st.write(f"総再生回数: {views_total}")
-        st.write(f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}")
-        st.write(f"活動月数: {months_active if months_active is not None else '-'}")
-        st.write(f"再生リスト数: {playlist_count}")
-
-        st.write("### 置き換えた新指標（直近）")
-        st.write(f"直近10日 合計再生数（直近公開動画のみ）: {total_views_last10}")
-        st.write(f"直近10日 投稿数: {num_videos_last10}")
-        st.write(f"直近10日 トップ動画: {top_title_last10} — {top_views_last10} views — シェア: {top_share_last10:.2%}")
-        st.write(f"直近10日 平均再生（動画あたり）: {avg_views_per_video_last10}")
-        st.write(f"直近30日 合計再生数（直近公開動画のみ）: {total_views_last30}")
-        st.write(f"直近30日 投稿数: {num_videos_last30}")
-        st.write(f"直近30日 視聴/登録比 (views_last30 / subscribers): {views_per_sub_last30}")
-
-    with colB:
-        st.write("### 上位プレイリスト（件数順）")
-        for i, pl in enumerate(top5_playlists, start=1):
-            st.write(f"{i}位: {pl['title']} → {pl['itemCount']} 本")
-
-        st.write("### 直近10日トップ動画（詳細）")
-        if top_video_id:
-            st.markdown(f"- [{top_title_last10}]({top_url_last10})")
-            st.write(f"  - 再生数: {top_views_last10}")
-            st.write(f"  - シェア: {top_share_last10:.2%}")
-        else:
-            st.write("該当する直近10日間の公開動画がありません。")
-
-    # TXT 出力（元フォーマットに準じて漏れなく書き出す）
-    subs_per_month = round((subs / months_active), 2) if months_active and months_active > 0 else 0.0
-    subs_per_video = round((subs / vids_total), 2) if vids_total and vids_total > 0 else 0.0
-    views_per_sub = round((views_total / subs), 2) if subs > 0 else 0.0
-    subs_per_month_per_video = round((subs_per_month / vids_total), 5) if vids_total and vids_total > 0 else 0.0
-    views_per_video = round((views_total / vids_total), 2) if vids_total and vids_total > 0 else 0.0
-    views_per_month = round((views_total / months_active), 2) if months_active and months_active > 0 else 0.0
-    subs_per_view = round((subs_per_month / views_per_month), 5) if views_per_month and views_per_month > 0 else 0.0
-    subs_per_view_alt = round((subs_per_video / views_per_video), 5) if views_per_video and views_per_video > 0 else 0.0
-    subs_per_total_view = round((subs / views_total), 5) if views_total and views_total > 0 else 0.0
     playlists_per_video = round((playlist_count / vids_total), 5) if vids_total and vids_total > 0 else 0.0
     videos_per_month = round((vids_total / months_active), 2) if months_active and months_active > 0 else 0.0
     videos_per_subscriber = round((vids_total / subs), 5) if subs and subs > 0 else 0.0
+    subs_per_month = round((subs / months_active), 2) if months_active and months_active > 0 else 0.0
+    subs_per_video = round((subs / vids_total), 2) if vids_total and vids_total > 0 else 0.0
+    subs_per_month_per_video = round((subs_per_month / vids_total), 5) if vids_total and vids_total > 0 else 0.0
+    views_per_month = round((views_total / months_active), 2) if months_active and months_active > 0 else 0.0
 
-    txt_output = io.StringIO()
-    txt_output.write(f"{channel_id}\n")
-    txt_output.write(f"{basic.get('title')}\n")
-    txt_output.write(f"{subs}\n")
-    txt_output.write(f"{vids_total}\n")
-    txt_output.write(f"{published_dt.strftime('%Y-%m-%d') if published_dt else '-'}\n")
-    txt_output.write(f"{months_active if months_active is not None else '-'}\n")
-    txt_output.write(f"{subs_per_month}\n")
-    txt_output.write(f"{subs_per_video}\n")
-    txt_output.write(f"{views_total}\n")
-    txt_output.write(f"{views_per_sub}\n")
-    txt_output.write(f"{playlist_count}\n")
-    txt_output.write(f"{subs_per_month_per_video}\n")
-    txt_output.write(f"{views_per_video}\n")
-    txt_output.write(f"{views_per_month}\n")
-    txt_output.write(f"{subs_per_view}\n")
-    txt_output.write(f"{subs_per_view_alt}\n")
-    txt_output.write(f"{subs_per_total_view}\n")
-    txt_output.write(f"{playlists_per_video}\n")
-    txt_output.write(f"{videos_per_month}\n")
-    txt_output.write(f"{videos_per_subscriber}\n")
+    # --- 表示（ドキュメントに合わせたラベル・順序） ---
+    st.header("集計結果")
+    col1, col2 = st.columns([2, 2])
 
-    # 直近指標を続けて書く
-    txt_output.write(f"{total_views_last10}\n")
-    txt_output.write(f"{avg_views_per_video_last10}\n")
-    txt_output.write(f"{views_per_sub_last30}\n")
-    txt_output.write(f"{playlist_count}\n")
+    with col1:
+        st.subheader("基本情報")
+        st.write(f"※データ取得日(YYYY/MM/DD): {data_date}")
+        st.write(f"チャンネルID: {channel_id}")
+        st.write(f"チャンネル名: {basic.get('title')}")
+        st.write(f"登録者数（subscriberCount）: {subs}")
+        st.write(f"動画本数（videoCount）: {vids_total}")
+        st.write(f"総再生回数（viewCount）: {views_total}")
+        st.write(f"活動開始日（publishedAt）: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}")
+        st.write(f"活動月数（months_active）: {months_active if months_active is not None else '-'}")
+        st.write(f"※再生リスト数（playlist_count）: {playlist_count}")
 
-    txt_output.write("\n動画本数が多い上位5再生リスト:\n")
-    for i, pl in enumerate(top5_playlists, 1):
-        txt_output.write(f"{i}位: {pl['title']}　→ {pl['itemCount']}本\n")
+    with col2:
+        st.subheader("※集計系（※ は新規／表記変更）")
+        st.write(f"※累計登録者数/活動月（subs_per_month）: {subs_per_month}")
+        st.write(f"※累計登録者数/動画（subs_per_video）: {subs_per_video}")
+        st.write(f"※累計動画あたり総再生回数（views_per_video）: {views_per_video}")
 
-    st.write("### プレイリスト詳細（クリックで展開・遅延取得）")
-    for pl in playlists_sorted[:20]:
-        pid = pl.get("playlistId")
-        title = pl.get("title")
-        count = pl.get("itemCount")
-        with st.expander(f"{title} — {count} 本"):
-            pl_items = fetch_playlist_items_sample(pid, max_items=100)
-            if not pl_items:
-                st.write("プレイリスト内の取得に失敗、または空です。")
-            else:
-                for idx, it in enumerate(pl_items, start=1):
-                    url = f"https://www.youtube.com/watch?v={it['videoId']}"
-                    pub = it.get("publishedAt") or "-"
-                    st.markdown(f"{idx}. [{it.get('title')}]({url}) — 公開: {pub}")
+    st.subheader("効率・比率系")
+    st.write(f"累計総再生回数/登録者数（views_per_sub）: {views_per_sub}")
+    st.write(f"1再生あたり登録者増（subs_per_total_view）: {subs_per_total_view}")
+    st.write(f"動画あたりプレイリスト数（playlists_per_video）: {playlists_per_video}")
+    st.write(f"活動月あたり動画本数（videos_per_month）: {videos_per_month}")
+    st.write(f"登録者あたり動画本数（videos_per_subscriber）: {videos_per_subscriber}")
 
-    st.download_button("TXTダウンロード", data=txt_output.getvalue().encode("utf-8"), file_name="vt_stats.txt")
+    st.subheader("直近指標（公開日フィルターベース）")
+    st.write(f"直近10日 合計再生数（total_views_last10・公開された動画のみ）: {total_views_last10}")
+    st.write(f"直近10日 投稿数（num_videos_last10）: {num_videos_last10}")
+    st.write(f"直近10日 トップ動画（タイトル・URL・views・シェア）:")
+    if top_video_id:
+        st.write(f"- {top_title_last10} | {top_url_last10} | views: {top_views_last10} | share: {top_share_last10:.4f}")
+    else:
+        st.write("- 該当する直近10日間の公開動画がありません。")
+    st.write(f"直近10日 平均再生（avg_views_per_video_last10）: {avg_views_per_video_last10}")
+    st.write(f"直近30日 合計再生数（total_views_last30）: {total_views_last30}")
+    st.write(f"直近30日 視聴/登録比（views_per_sub_last30）: {views_per_sub_last30}")
 
     st.markdown("---")
     st.write("運用メモ（重要）:")
-    st.write("- 直近N日系指標は「その期間に公開された動画が現在までに獲得した再生数」を集計しています。")
-    st.write("- 期間中に既に公開されていた動画が期間内に稼いだ増分は取得できません（YouTube Analytics API が必要）。")
-    st.write("- プレイリスト展開はユーザーがクリックしたタイミングで取得するため、クォータ消費を抑えられます。")
+    st.write("- 「直近N日」系は公開日でフィルタしています。期間中に既に公開済みの古い動画の増分は含みません。")
+    st.write("- 正確な期間増分（再生増分・登録者増加）を取得するには YouTube Analytics API（OAuth、チャンネル権限）が必要です。")
+    st.write("- キャッシュTTLは各関数のデコレータで調整できます。長めにすればクォータ消費を抑えられます。")
