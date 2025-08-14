@@ -1,4 +1,4 @@
-# streamlit_app.py — 上部にTXTダウンロード（集計ボタンの右）を配置する版
+# streamlit_app.py — 「直近指標」を10日/30日それぞれの行で表示する版
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -149,22 +149,20 @@ def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[
 
 # UI / Main
 st.title("解析ツール")
-st.markdown("ID")
+st.markdown("ID入力")
 
 # top row: input | buttons (集計 + ダウンロード) | info
 col_input, col_buttons, col_info = st.columns([3, 1, 1])
 with col_input:
     url_or_id = st.text_input("URL / ID / 表示名 を入力")
 
-# 集計ボタン（左）とダウンロードボタン（右）を同じカラムに横並び風に表示
 with col_buttons:
     run_btn = st.button("集計")
-    # ダウンロードボタンはセッションに保存されたテキストがあれば表示
     last_txt = st.session_state.get("last_txt") if "last_txt" in st.session_state else None
     if last_txt:
         st.download_button("TXTダウンロード", data=last_txt.encode("utf-8"), file_name="vt_stats.txt")
     else:
-        st.write("")  # プレースホルダ（何も表示しない）
+        st.write("")
 
 with col_info:
     st.write("動作メモ")
@@ -227,13 +225,28 @@ if run_btn:
         top_views_last10 = 0
         top_share_last10 = 0.0
 
+    # 直近30日のトップ動画（views と share のみ）
+    if num_videos_last30 > 0:
+        top_vid_30 = max(stats_30.items(), key=lambda kv: kv[1]["viewCount"])
+        top_video_id_30 = top_vid_30[0]
+        top_info_30 = top_vid_30[1]
+        top_views_last30 = top_info_30["viewCount"]
+        top_share_last30 = round((top_views_last30 / total_views_last30) if total_views_last30 > 0 else 0.0, 4)
+    else:
+        top_video_id_30 = None
+        top_views_last30 = 0
+        top_share_last30 = 0.0
+
     # 指標計算（簡潔表示用）
     views_per_sub = round((views_total / subs), 2) if subs > 0 else 0.0
     subs_per_total_view = round((subs / views_total), 5) if views_total and views_total > 0 else 0.0
     views_per_video = round((views_total / vids_total), 2) if vids_total and vids_total > 0 else 0.0
 
+    views_per_sub_last10 = round((total_views_last10 / subs), 5) if subs > 0 else 0.0
     views_per_sub_last30 = round((total_views_last30 / subs), 5) if subs > 0 else 0.0
+
     avg_views_per_video_last10 = round((total_views_last10 / num_videos_last10), 2) if num_videos_last10 > 0 else 0.0
+    avg_views_per_video_last30 = round((total_views_last30 / num_videos_last30), 2) if num_videos_last30 > 0 else 0.0
 
     playlists_meta = get_playlists_meta(channel_id)
     playlist_count = len(playlists_meta)
@@ -282,7 +295,7 @@ if run_btn:
             st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
 
     with col2:
-        # 右カラムには直近指標と補助情報を表示
+        # 右カラムには直近指標と補助情報を表示（指定の順序で）
         st.subheader("直近指標")
         st.write(f"直近10日 合計再生数: {total_views_last10}")
         st.write(f"直近10日 投稿数: {num_videos_last10}")
@@ -292,7 +305,16 @@ if run_btn:
         else:
             st.write("- 該当する直近10日間の公開動画がありません。")
         st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
+        st.write(f"直近10日 視聴/登録比: {views_per_sub_last10}")
+
         st.write(f"直近30日 合計再生数: {total_views_last30}")
+        st.write(f"直近30日 投稿数: {num_videos_last30}")
+        st.write("直近30日 トップ動画:")
+        if top_video_id_30:
+            st.write(f"- views: {top_views_last30} | share: {top_share_last30:.4f}")
+        else:
+            st.write("- 該当する直近30日間の公開動画がありません。")
+        st.write(f"直近30日 平均再生: {avg_views_per_video_last30}")
         st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
 
         st.markdown("---")
@@ -327,18 +349,23 @@ if run_btn:
     for pl in top5_playlists:
         txt_output.write(f"{pl.get('title','')}\t{pl.get('itemCount','')}\n")
 
-    # 直近指標
+    # 直近指標（10日）
     txt_output.write(f"{total_views_last10}\n")
     txt_output.write(f"{num_videos_last10}\n")
     txt_output.write(f"{top_views_last10}\n")
     txt_output.write(f"{top_share_last10}\n")
     txt_output.write(f"{avg_views_per_video_last10}\n")
+    txt_output.write(f"{views_per_sub_last10}\n")
+
+    # 直近指標（30日）
     txt_output.write(f"{total_views_last30}\n")
+    txt_output.write(f"{num_videos_last30}\n")
+    txt_output.write(f"{top_views_last30}\n")
+    txt_output.write(f"{top_share_last30}\n")
+    txt_output.write(f"{avg_views_per_video_last30}\n")
     txt_output.write(f"{views_per_sub_last30}\n")
 
     # セッション保存（上部ダウンロードボタンで参照される）
     st.session_state["last_txt"] = txt_output.getvalue()
 
-    # ページの上部にあるダウンロードボタンはセッションを参照しているため、
-    # 集計実行後はページ全体が再レンダリングされれば上部にダウンロードが表示されます。
     st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
