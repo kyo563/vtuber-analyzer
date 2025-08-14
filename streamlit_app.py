@@ -1,4 +1,4 @@
-# streamlit_app.py — 「直近指標」を10日/30日それぞれの行で表示する版
+# streamlit_app.py — 修正版：直近指標のインデント修正済み（全文）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -305,7 +305,7 @@ if run_btn:
             st.write("- 該当する直近10日間の公開動画がありません。")
         st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
         st.write(f"直近10日 視聴/登録比: {views_per_sub_last10}")
- st.markdown("---")
+        st.markdown("---")
         st.write(f"直近30日 合計再生数: {total_views_last30}")
         st.write(f"直近30日 投稿数: {num_videos_last30}")
         st.write("直近30日 トップ動画:")
@@ -315,8 +315,6 @@ if run_btn:
             st.write("- 該当する直近30日間の公開動画がありません。")
         st.write(f"直近30日 平均再生: {avg_views_per_video_last30}")
         st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
-
-    
 
     # TXT ダウンロード用（結果のみを順番に出力） — セッションに保存して上部からダウンロード可能にする
     txt_output = io.StringIO()
@@ -364,4 +362,3 @@ if run_btn:
     st.session_state["last_txt"] = txt_output.getvalue()
 
     st.success("集計が完了しました。ページ上部の「TXTダウンロード」からダウンロードできます。")
-
