@@ -1,4 +1,4 @@
-# streamlit_app.py — experimental_rerun を使わないプレースホルダ方式（全文）
+# streamlit_app.py — 修正版（SyntaxError 修正済み・プレースホルダ方式）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -8,7 +8,7 @@ import io
 st.set_page_config(page_title="解析ツール", layout="wide")
 
 # APIキー（推奨：Streamlit secrets に YOUTUBE_API_KEY を設定）
-API_KEY = st.secrets.get("YOUTUBE_API_KEY") if "YOUTUBE_API_KEY" in st.secrets else None
+API_KEY = st.secrets.get("YOUTUBE_API_KEY", None)
 if not API_KEY:
     API_KEY = st.sidebar.text_input("YouTube API Key (一時入力可)", type="password")
 
@@ -122,48 +122,10 @@ def get_videos_stats(video_ids: Tuple[str, ...]) -> Dict[str, Dict]:
             continue
     return out
 
-@st.cache_data(ttl=300)
-def fetch_playlist_items_sample(playlist_id: str, max_items: int = 100) -> List[Dict]:
-    youtube = get_youtube_client()
-    items: List[Dict] = []
-    next_page = None
-    try:
-        while True and len(items) < max_items:
-            resp = youtube.playlistItems().list(part="snippet,contentDetails", playlistId=playlist_id, maxResults=50, pageToken=next_page).execute()
-            for it in resp.get("items", []):
-                videoId = it.get("contentDetails", {}).get("videoId") or it.get("snippet", {}).get("resourceId", {}).get("videoId")
-                if videoId:
-                    items.append({
-                        "videoId": videoId,
-                        "title": it.get("snippet", {}).get("title"),
-                        "publishedAt": it.get("snippet", {}).get("publishedAt")
-                    })
-                    if len(items) >= max_items:
-                        break
-            next_page = resp.get("nextPageToken")
-            if not next_page:
-                break
-    except Exception:
-        pass
-    return items
-
 # UI / Main
 st.title("解析ツール")
 
 # top row: input | buttons (集計 + ダウンロード) | info
 col_input, col_buttons, col_info = st.columns([3, 1, 1])
 with col_input:
-    url_or_id = st.text_input("URL / ID / 表示名 を入力")
-
-# プレースホルダをここで作る（上部ダウンロードを後で上書き）
-with col_buttons:
-    run_btn = st.button("集計")
-    download_placeholder = st.empty()  # ← ここを後で上書きする
-
-with col_info:
-    st.write("動作メモ")
-    st.write("- APIキーは Streamlit secrets に設定してください。")
-    st.write("- キャッシュを活用してクォータを節約しています。")
-
-if run_btn:
-    if not API_KE_
+    url_or_id = st.text_input("URL / I_
