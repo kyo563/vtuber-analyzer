@@ -1,4 +1,4 @@
-# streamlit_app.py — 修正版（文字列切れ等のシンタックスエラーを解消）
+# streamlit_app.py — 修正版（全文：インデント & トップ動画タイトル出力対応）
 import streamlit as st
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
@@ -184,29 +184,33 @@ if run_btn:
     total_views_last30 = sum(v.get("viewCount", 0) for v in stats_30.values())
     num_videos_last30 = len(stats_30)
 
-    # 直近10日のトップ動画（views と share のみ）
+    # 直近10日のトップ動画（views と share とタイトル）
     if num_videos_last10 > 0:
         top_vid_10 = max(stats_10.items(), key=lambda kv: kv[1]["viewCount"])
         top_video_id = top_vid_10[0]
         top_info = top_vid_10[1]
         top_views_last10 = top_info["viewCount"]
         top_share_last10 = round((top_views_last10 / total_views_last10) if total_views_last10 > 0 else 0.0, 4)
+        top_title_last10 = (top_info.get("title") or "").replace("\n", " ").strip()
     else:
         top_video_id = None
         top_views_last10 = 0
         top_share_last10 = 0.0
+        top_title_last10 = ""
 
-    # 直近30日のトップ動画（views と share のみ）
+    # 直近30日のトップ動画（views と share とタイトル）
     if num_videos_last30 > 0:
         top_vid_30 = max(stats_30.items(), key=lambda kv: kv[1]["viewCount"])
         top_video_id_30 = top_vid_30[0]
         top_info_30 = top_vid_30[1]
         top_views_last30 = top_info_30["viewCount"]
         top_share_last30 = round((top_views_last30 / total_views_last30) if total_views_last30 > 0 else 0.0, 4)
+        top_title_last30 = (top_info_30.get("title") or "").replace("\n", " ").strip()
     else:
         top_video_id_30 = None
         top_views_last30 = 0
         top_share_last30 = 0.0
+        top_title_last30 = ""
 
     # 指標計算（簡潔表示用）
     views_per_sub = round((views_total / subs), 2) if subs > 0 else 0.0
@@ -266,23 +270,28 @@ if run_btn:
             st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
 
     with col2:
-        # 右カラムには直近指標と補助情報を表示（指定の順序で）
         st.subheader("直近指標")
         st.write(f"直近10日 合計再生数: {total_views_last10}")
         st.write(f"直近10日 投稿数: {num_videos_last10}")
         st.write("直近10日 トップ動画:")
         if top_video_id:
-            st.write(f"- views: {top_views_last10} | share: {top_share_last10*100:.2f}%")
+            title_10 = (top_info.get("title") or "").replace("\n", " ").strip()
+            url_10 = f"https://www.youtube.com/watch?v={top_video_id}"
+            st.markdown(f"- [{title_10}]({url_10}) — views: {top_views_last10} | share: {top_share_last10*100:.2f}%")
         else:
             st.write("- 該当する直近10日間の公開動画がありません。")
         st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
         st.write(f"直近10日 視聴/登録比: {views_per_sub_last10}")
+
         st.markdown("---")
+
         st.write(f"直近30日 合計再生数: {total_views_last30}")
         st.write(f"直近30日 投稿数: {num_videos_last30}")
         st.write("直近30日 トップ動画:")
         if top_video_id_30:
-            st.write(f"- views: {top_views_last30} | share: {top_share_last30*100:.2f}%")
+            title_30 = (top_info_30.get("title") or "").replace("\n", " ").strip()
+            url_30 = f"https://www.youtube.com/watch?v={top_video_id_30}"
+            st.markdown(f"- [{title_30}]({url_30}) — views: {top_views_last30} | share: {top_share_last30*100:.2f}%")
         else:
             st.write("- 該当する直近30日間の公開動画がありません。")
         st.write(f"直近30日 平均再生: {avg_views_per_video_last30}")
@@ -315,17 +324,19 @@ if run_btn:
         title = (pl.get("title", "") or "").replace("\n", " ").strip()
         txt_output.write(f"{title}→{pl.get('itemCount','')}\n")
 
-    # 直近指標（10日）
+    # 直近指標（10日） — トップ動画のタイトルを先に出す
     txt_output.write(f"{total_views_last10}\n")
     txt_output.write(f"{num_videos_last10}\n")
+    txt_output.write(f"{top_title_last10}\n")
     txt_output.write(f"{top_views_last10}\n")
     txt_output.write(f"{top_share_last10}\n")
     txt_output.write(f"{avg_views_per_video_last10}\n")
     txt_output.write(f"{views_per_sub_last10}\n")
 
-    # 直近指標（30日）
+    # 直近指標（30日） — トップ動画のタイトルを先に出す
     txt_output.write(f"{total_views_last30}\n")
     txt_output.write(f"{num_videos_last30}\n")
+    txt_output.write(f"{top_title_last30}\n")
     txt_output.write(f"{top_views_last30}\n")
     txt_output.write(f"{top_share_last30}\n")
     txt_output.write(f"{avg_views_per_video_last30}\n")
