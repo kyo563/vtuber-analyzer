@@ -447,7 +447,14 @@ if run_btn:
         summary_lines.append("直近10日 トップ動画:")
         if top_video_id:
             url_10 = f"https://www.youtube.com/watch?v={top_video_id}"
-            st.write(f"- {top_title_last10} — views: {top_views_last10} | share: {top_share_last10*100:.2f}%")
+            # UI: ハイパーリンク付き
+            st.markdown(
+                f"- [{top_title_last10}]({url_10}) — "
+                f"views: {top_views_last10} | "
+                f"share: {top_share_last10*100:.2f}%",
+                unsafe_allow_html=False,
+            )
+            # コピー用: URL なしで注釈付き
             summary_lines.append(
                 f"- {top_title_last10} — "
                 f"views: {top_views_last10}（この動画単体の再生数） | "
@@ -489,7 +496,12 @@ if run_btn:
         summary_lines.append("直近30日 トップ動画:")
         if top_video_id_30:
             url_30 = f"https://www.youtube.com/watch?v={top_video_id_30}"
-            st.write(f"- {top_title_last30} — views: {top_views_last30} | share: {top_share_last30*100:.2f}%")
+            st.markdown(
+                f"- [{top_title_last30}]({url_30}) — "
+                f"views: {top_views_last30} | "
+                f"share: {top_share_last30*100:.2f}%",
+                unsafe_allow_html=False,
+            )
             summary_lines.append(
                 f"- {top_title_last30} — "
                 f"views: {top_views_last30}（この動画単体の再生数） | "
