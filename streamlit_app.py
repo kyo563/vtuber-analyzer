@@ -16,6 +16,18 @@ st.markdown(
         color: #888888;      /* 注釈用の少し暗めの色 */
         font-size: 0.9em;    /* 少しだけ小さく（好みで調整可） */
     }
+    .copy-btn {
+        background-color: #FF4B4B;
+        color: white;
+        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .copy-btn:hover {
+        opacity: 0.9;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -217,20 +229,26 @@ def get_videos_stats(video_ids: Tuple[str, ...], api_key: str) -> Dict[str, Dict
 
 
 # ===== 注釈付きメトリクス 1行表示用ヘルパ =====
-def metric_line(label: str, value, note: Optional[str] = None):
+def metric_line(label: str, value, note: Optional[str] = None, buf: Optional[list] = None):
     """
     label: 左側の指標名
     value: 値
     note : 「（〜〜）」内に入れる説明。metric-note クラスで色を落として表示。
+    buf  : コピー用テキストを蓄積するリスト（任意）
     """
     if note:
+        text = f"{label}: {value}（{note}）"
         st.markdown(
             f"{label}: {value} "
             f"<span class='metric-note'>（{note}）</span>",
             unsafe_allow_html=True,
         )
     else:
-        st.markdown(f"{label}: {value}", unsafe_allow_html=True)
+        text = f"{label}: {value}"
+        st.markdown(text, unsafe_allow_html=True)
+
+    if buf is not None:
+        buf.append(text)
 
 
 # ==================== UI / Main ====================
@@ -246,6 +264,7 @@ with col_input:
 with col_buttons:
     run_btn = st.button("集計")
     download_placeholder = st.empty()
+    copy_placeholder = st.empty()
 
 with col_info:
     st.write("動作メモ")
@@ -377,6 +396,27 @@ if run_btn:
         else 0.0
     )
 
+    # コピー用テキストバッファ（UI表示内容＋注釈付き）
+    summary_lines: list = []
+    summary_lines.append("=== 集計結果 ===")
+    summary_lines.append("")
+    summary_lines.append("■ 基本情報")
+    summary_lines.append(f"データ取得日: {data_date}（このツールで集計を行った日）")
+    summary_lines.append(f"チャンネルID: {channel_id}（UCから始まる固有ID）")
+    summary_lines.append(f"チャンネル名: {basic.get('title')}")
+    summary_lines.append(f"登録者数: {subs}（現在の登録者総数）")
+    summary_lines.append(f"動画本数: {vids_total}（公開済み動画の本数）")
+    summary_lines.append(f"総再生回数: {views_total}（公開済み動画の累計再生数）")
+    summary_lines.append(
+        f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
+        "（チャンネル作成日）"
+    )
+    summary_lines.append(
+        f"活動月数: {months_active if months_active is not None else '-'}"
+        "（チャンネル開設からの日数 ÷ 30 を概算）"
+    )
+    summary_lines.append("")
+
     # ===== 表示 =====
     st.header("集計結果")
     col1, col2 = st.columns([2, 2])
@@ -400,35 +440,43 @@ if run_btn:
         )
 
         st.subheader("集計")
-        metric_line("累計登録者数/活動月", subs_per_month, "現在の登録者数 ÷ 活動月数")
-        metric_line("累計登録者数/動画", subs_per_video, "現在の登録者数 ÷ 動画本数")
-        metric_line("累計動画あたり総再生回数", views_per_video, "総再生回数 ÷ 動画本数")
-        metric_line("累計総再生回数/登録者数", views_per_sub, "総再生回数 ÷ 登録者数")
-        metric_line("1再生あたり登録者増", subs_per_total_view, "登録者数 ÷ 総再生回数")
-        metric_line("動画あたりプレイリスト数", playlists_per_video, "プレイリスト総数 ÷ 動画本数")
-        metric_line("活動月あたり動画本数", videos_per_month, "動画本数 ÷ 活動月数")
-        metric_line("登録者あたり動画本数", videos_per_subscriber, "動画本数 ÷ 登録者数")
+        metric_line("累計登録者数/活動月", subs_per_month, "現在の登録者数 ÷ 活動月数", summary_lines)
+        metric_line("累計登録者数/動画", subs_per_video, "現在の登録者数 ÷ 動画本数", summary_lines)
+        metric_line("累計動画あたり総再生回数", views_per_video, "総再生回数 ÷ 動画本数", summary_lines)
+        metric_line("累計総再生回数/登録者数", views_per_sub, "総再生回数 ÷ 登録者数", summary_lines)
+        metric_line("1再生あたり登録者増", subs_per_total_view, "登録者数 ÷ 総再生回数", summary_lines)
+        metric_line("動画あたりプレイリスト数", playlists_per_video, "プレイリスト総数 ÷ 動画本数", summary_lines)
+        metric_line("活動月あたり動画本数", videos_per_month, "動画本数 ÷ 活動月数", summary_lines)
+        metric_line("登録者あたり動画本数", videos_per_subscriber, "動画本数 ÷ 登録者数", summary_lines)
 
         st.subheader("上位プレイリスト（件数順）")
+        summary_lines.append("")
+        summary_lines.append("■ 上位プレイリスト（件数順）")
         for i, pl in enumerate(top5_playlists, start=1):
-            st.write(f"{i}位: {pl['title']} → {pl['itemCount']}本")
+            line = f"{i}位: {pl['title']} → {pl['itemCount']}本"
+            st.write(line)
+            summary_lines.append(line)
 
     # --- 右カラム：直近指標 ---
     with col2:
         st.subheader("直近指標")
-
+        summary_lines.append("")
+        summary_lines.append("■ 直近指標")
         metric_line(
             "直近10日 合計再生数",
             total_views_last10,
             "直近10日間に公開された動画の再生数合計",
+            summary_lines,
         )
         metric_line(
             "直近10日 投稿数",
             num_videos_last10,
             "直近10日間に公開された公開動画本数",
+            summary_lines,
         )
 
         st.write("直近10日 トップ動画:")
+        summary_lines.append("直近10日 トップ動画:")
         if top_video_id:
             url_10 = f"https://www.youtube.com/watch?v={top_video_id}"
             st.markdown(
@@ -439,18 +487,26 @@ if run_btn:
                 f"<span class='metric-note'>（直近10日の合計再生数に占める割合）</span>",
                 unsafe_allow_html=True,
             )
+            summary_lines.append(
+                f"- {top_title_last10} — "
+                f"views: {top_views_last10}（この動画単体の再生数） | "
+                f"share: {top_share_last10*100:.2f}%（直近10日の合計再生数に占める割合）"
+            )
         else:
             st.write("- 該当する直近10日間の公開動画がありません。")
+            summary_lines.append("- 該当する直近10日間の公開動画がありません。")
 
         metric_line(
             "直近10日 平均再生",
             avg_views_per_video_last10,
             "直近10日間の合計再生数 ÷ 投稿数",
+            summary_lines,
         )
         metric_line(
             "直近10日 視聴/登録比",
             views_per_sub_last10,
             "直近10日の合計再生数 ÷ 現在の登録者数",
+            summary_lines,
         )
 
         st.markdown("---")
@@ -459,14 +515,17 @@ if run_btn:
             "直近30日 合計再生数",
             total_views_last30,
             "直近30日間に公開された動画の再生数合計",
+            summary_lines,
         )
         metric_line(
             "直近30日 投稿数",
             num_videos_last30,
             "直近30日間に公開された公開動画本数",
+            summary_lines,
         )
 
         st.write("直近30日 トップ動画:")
+        summary_lines.append("直近30日 トップ動画:")
         if top_video_id_30:
             url_30 = f"https://www.youtube.com/watch?v={top_video_id_30}"
             st.markdown(
@@ -477,21 +536,31 @@ if run_btn:
                 f"<span class='metric-note'>（直近30日の合計再生数に占める割合）</span>",
                 unsafe_allow_html=True,
             )
+            summary_lines.append(
+                f"- {top_title_last30} — "
+                f"views: {top_views_last30}（この動画単体の再生数） | "
+                f"share: {top_share_last30*100:.2f}%（直近30日の合計再生数に占める割合）"
+            )
         else:
             st.write("- 該当する直近30日間の公開動画がありません。")
+            summary_lines.append("- 該当する直近30日間の公開動画がありません。")
 
         metric_line(
             "直近30日 平均再生",
             avg_views_per_video_last30,
             "直近30日間の合計再生数 ÷ 投稿数",
+            summary_lines,
         )
         metric_line(
             "直近30日 視聴/登録比",
             views_per_sub_last30,
             "直近30日の合計再生数 ÷ 現在の登録者数",
+            summary_lines,
         )
 
-    # ===== TXT ダウンロード用 =====
+    summary_text = "\n".join(summary_lines)
+
+    # ===== TXT ダウンロード用（注釈なしのCSVテキスト） =====
     txt_output = io.StringIO()
 
     # 基本情報
@@ -539,6 +608,7 @@ if run_btn:
 
     txt_value = txt_output.getvalue()
     st.session_state["last_txt"] = txt_value
+    st.session_state["summary_text"] = summary_text
 
     # ===== ダウンロード & コピー ボタン（同じ列に配置） =====
     with col_buttons:
@@ -548,16 +618,15 @@ if run_btn:
             file_name="vt_stats.txt",
         )
 
-        # クリップボードコピー用ボタン（JS）
         components.html(
             f"""
+            <button class="copy-btn" onclick="copyToClipboard()">集計結果をコピー</button>
             <script>
             function copyToClipboard() {{
-                const text = {json.dumps(txt_value)};
+                const text = {json.dumps(summary_text)};
                 if (navigator.clipboard && navigator.clipboard.writeText) {{
                     navigator.clipboard.writeText(text);
                 }} else {{
-                    // 古いブラウザ用フォールバック
                     const textarea = document.createElement('textarea');
                     textarea.value = text;
                     document.body.appendChild(textarea);
@@ -567,9 +636,8 @@ if run_btn:
                 }}
             }}
             </script>
-            <button onclick="copyToClipboard()">集計結果をコピー</button>
             """,
-            height=60,
+            height=80,
         )
 
-    st.success("集計が完了しました。上部のダウンロードボタンから取得・コピーできます。")
+    st.success("集計が完了しました。上部のボタンからTXTダウンロード / コピーができます。")
