@@ -353,26 +353,53 @@ if run_btn:
 
     with col1:
         st.subheader("基本情報")
-        st.write(f"データ取得日: {data_date}")
-        st.write(f"チャンネルID: {channel_id}")
+        st.write(f"データ取得日: {data_date}（このツールで集計を行った日）")
+        st.write(f"チャンネルID: {channel_id}（UCから始まる固有ID）")
         st.write(f"チャンネル名: {basic.get('title')}")
-        st.write(f"登録者数: {subs}")
-        st.write(f"動画本数: {vids_total}")
-        st.write(f"総再生回数: {views_total}")
+        st.write(f"登録者数: {subs}（現在の登録者総数）")
+        st.write(f"動画本数: {vids_total}（公開済み動画の本数）")
+        st.write(f"総再生回数: {views_total}（公開済み動画の累計再生数）")
         st.write(
-            f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
+            f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}（チャンネル作成日）"
         )
-        st.write(f"活動月数: {months_active if months_active is not None else '-'}")
+        st.write(
+            f"活動月数: {months_active if months_active is not None else '-'}"
+            "（チャンネル開設からの日数 ÷ 30 を概算）"
+        )
 
         st.subheader("集計")
-        st.write(f"累計登録者数/活動月: {subs_per_month}")
-        st.write(f"累計登録者数/動画: {subs_per_video}")
-        st.write(f"累計動画あたり総再生回数: {views_per_video}")
-        st.write(f"累計総再生回数/登録者数: {views_per_sub}")
-        st.write(f"1再生あたり登録者増: {subs_per_total_view}")
-        st.write(f"動画あたりプレイリスト数: {playlists_per_video}")
-        st.write(f"活動月あたり動画本数: {videos_per_month}")
-        st.write(f"登録者あたり動画本数: {videos_per_subscriber}")
+        st.write(
+            f"累計登録者数/活動月: {subs_per_month} "
+            "（現在の登録者数 ÷ 活動月数）"
+        )
+        st.write(
+            f"累計登録者数/動画: {subs_per_video} "
+            "（現在の登録者数 ÷ 動画本数）"
+        )
+        st.write(
+            f"累計動画あたり総再生回数: {views_per_video} "
+            "（総再生回数 ÷ 動画本数）"
+        )
+        st.write(
+            f"累計総再生回数/登録者数: {views_per_sub} "
+            "（総再生回数 ÷ 登録者数）"
+        )
+        st.write(
+            f"1再生あたり登録者増: {subs_per_total_view} "
+            "（登録者数 ÷ 総再生回数）"
+        )
+        st.write(
+            f"動画あたりプレイリスト数: {playlists_per_video} "
+            "（プレイリスト総数 ÷ 動画本数）"
+        )
+        st.write(
+            f"活動月あたり動画本数: {videos_per_month} "
+            "（動画本数 ÷ 活動月数）"
+        )
+        st.write(
+            f"登録者あたり動画本数: {videos_per_subscriber} "
+            "（動画本数 ÷ 登録者数）"
+        )
 
         st.subheader("上位プレイリスト（件数順）")
         for i, pl in enumerate(top5_playlists, start=1):
@@ -380,33 +407,63 @@ if run_btn:
 
     with col2:
         st.subheader("直近指標")
-        st.write(f"直近10日 合計再生数: {total_views_last10}")
-        st.write(f"直近10日 投稿数: {num_videos_last10}")
+        st.write(
+            f"直近10日 合計再生数: {total_views_last10} "
+            "（直近10日間に公開された動画の再生数合計）"
+        )
+        st.write(
+            f"直近10日 投稿数: {num_videos_last10} "
+            "（直近10日間に公開された公開動画本数）"
+        )
         st.write("直近10日 トップ動画:")
         if top_video_id:
             url_10 = f"https://www.youtube.com/watch?v={top_video_id}"
             st.markdown(
-                f"- [{top_title_last10}]({url_10}) — views: {top_views_last10} | share: {top_share_last10*100:.2f}%"
+                f"- [{top_title_last10}]({url_10}) — "
+                f"views: {top_views_last10} "
+                f"| share: {top_share_last10*100:.2f}%"
+                "（直近10日の合計再生に占める割合）"
             )
         else:
             st.write("- 該当する直近10日間の公開動画がありません。")
-        st.write(f"直近10日 平均再生: {avg_views_per_video_last10}")
-        st.write(f"直近10日 視聴/登録比: {views_per_sub_last10}")
+        st.write(
+            f"直近10日 平均再生: {avg_views_per_video_last10} "
+            "（直近10日間の合計再生数 ÷ 投稿数）"
+        )
+        st.write(
+            f"直近10日 視聴/登録比: {views_per_sub_last10} "
+            "（直近10日の合計再生数 ÷ 現在の登録者数）"
+        )
 
         st.markdown("---")
 
-        st.write(f"直近30日 合計再生数: {total_views_last30}")
-        st.write(f"直近30日 投稿数: {num_videos_last30}")
+        st.write(
+            f"直近30日 合計再生数: {total_views_last30} "
+            "（直近30日間に公開された動画の再生数合計）"
+        )
+        st.write(
+            f"直近30日 投稿数: {num_videos_last30} "
+            "（直近30日間に公開された公開動画本数）"
+        )
         st.write("直近30日 トップ動画:")
         if top_video_id_30:
             url_30 = f"https://www.youtube.com/watch?v={top_video_id_30}"
             st.markdown(
-                f"- [{top_title_last30}]({url_30}) — views: {top_views_last30} | share: {top_share_last30*100:.2f}%"
+                f"- [{top_title_last30}]({url_30}) — "
+                f"views: {top_views_last30} "
+                f"| share: {top_share_last30*100:.2f}%"
+                "（直近30日の合計再生に占める割合）"
             )
         else:
             st.write("- 該当する直近30日間の公開動画がありません。")
-        st.write(f"直近30日 平均再生: {avg_views_per_video_last30}")
-        st.write(f"直近30日 視聴/登録比: {views_per_sub_last30}")
+        st.write(
+            f"直近30日 平均再生: {avg_views_per_video_last30} "
+            "（直近30日間の合計再生数 ÷ 投稿数）"
+        )
+        st.write(
+            f"直近30日 視聴/登録比: {views_per_sub_last30} "
+            "（直近30日の合計再生数 ÷ 現在の登録者数）"
+        )
 
     # TXT ダウンロード用
     txt_output = io.StringIO()
