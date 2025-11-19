@@ -401,19 +401,19 @@ if run_btn:
     summary_lines.append("=== 集計結果 ===")
     summary_lines.append("")
     summary_lines.append("■ 基本情報")
-    summary_lines.append(f"データ取得日: {data_date}（このツールで集計を行った日）")
-    summary_lines.append(f"チャンネルID: {channel_id}（UCから始まる固有ID）")
+    summary_lines.append(f"データ取得日: {data_date}")
+    summary_lines.append(f"チャンネルID: {channel_id}")
     summary_lines.append(f"チャンネル名: {basic.get('title')}")
-    summary_lines.append(f"登録者数: {subs}（現在の登録者総数）")
-    summary_lines.append(f"動画本数: {vids_total}（公開済み動画の本数）")
-    summary_lines.append(f"総再生回数: {views_total}（公開済み動画の累計再生数）")
+    summary_lines.append(f"登録者数: {subs}")
+    summary_lines.append(f"動画本数: {vids_total}")
+    summary_lines.append(f"総再生回数: {views_total}")
     summary_lines.append(
         f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
-        "（チャンネル作成日）"
+        
     )
     summary_lines.append(
         f"活動月数: {months_active if months_active is not None else '-'}"
-        "（チャンネル開設からの日数 ÷ 30 を概算）"
+        
     )
     summary_lines.append("")
 
@@ -424,19 +424,19 @@ if run_btn:
     # --- 左カラム：基本情報＋集計 ---
     with col1:
         st.subheader("基本情報")
-        st.write(f"データ取得日: {data_date}（このツールで集計を行った日）")
-        st.write(f"チャンネルID: {channel_id}（UCから始まる固有ID）")
+        st.write(f"データ取得日: {data_date}")
+        st.write(f"チャンネルID: {channel_id}")
         st.write(f"チャンネル名: {basic.get('title')}")
-        st.write(f"登録者数: {subs}（現在の登録者総数）")
-        st.write(f"動画本数: {vids_total}（公開済み動画の本数）")
-        st.write(f"総再生回数: {views_total}（公開済み動画の累計再生数）")
+        st.write(f"登録者数: {subs}")
+        st.write(f"動画本数: {vids_total}")
+        st.write(f"総再生回数: {views_total}")
         st.write(
             f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
             "（チャンネル作成日）"
         )
         st.write(
             f"活動月数: {months_active if months_active is not None else '-'}"
-            "（チャンネル開設からの日数 ÷ 30 を概算）"
+            
         )
 
         st.subheader("集計")
@@ -641,3 +641,4 @@ if run_btn:
         )
 
     st.success("集計が完了しました。上部のボタンからTXTダウンロード / コピーができます。")
+
