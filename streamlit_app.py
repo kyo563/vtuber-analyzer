@@ -8,31 +8,6 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="解析ツール", layout="wide")
 
-# ===== 注釈用 CSS =====
-st.markdown(
-    """
-    <style>
-    .metric-note {
-        color: #888888;      /* 注釈用の少し暗めの色 */
-        font-size: 0.9em;    /* 少しだけ小さく（好みで調整可） */
-    }
-    .copy-btn {
-        background-color: #FF4B4B;
-        color: white;
-        border: none;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.25rem;
-        cursor: pointer;
-        font-size: 0.9rem;
-    }
-    .copy-btn:hover {
-        opacity: 0.9;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # ===== APIキー（推奨：Streamlit secrets に YOUTUBE_API_KEY を設定） =====
 API_KEY = st.secrets.get("YOUTUBE_API_KEY", None)
 if not API_KEY:
@@ -233,22 +208,17 @@ def metric_line(label: str, value, note: Optional[str] = None, buf: Optional[lis
     """
     label: 左側の指標名
     value: 値
-    note : 「（〜〜）」内に入れる説明。metric-note クラスで色を落として表示。
+    note : コピー用テキストにだけ付ける注釈
     buf  : コピー用テキストを蓄積するリスト（任意）
     """
-    if note:
-        text = f"{label}: {value}（{note}）"
-        st.markdown(
-            f"{label}: {value} "
-            f"<span class='metric-note'>（{note}）</span>",
-            unsafe_allow_html=True,
-        )
-    else:
-        text = f"{label}: {value}"
-        st.markdown(text, unsafe_allow_html=True)
-
+    # UI には注釈を表示しない
+    st.write(f"{label}: {value}")
+    # コピー用テキストには注釈を含める
     if buf is not None:
-        buf.append(text)
+        if note:
+            buf.append(f"{label}: {value}（{note}）")
+        else:
+            buf.append(f"{label}: {value}")
 
 
 # ==================== UI / Main ====================
@@ -401,19 +371,19 @@ if run_btn:
     summary_lines.append("=== 集計結果 ===")
     summary_lines.append("")
     summary_lines.append("■ 基本情報")
-    summary_lines.append(f"データ取得日: {data_date}")
-    summary_lines.append(f"チャンネルID: {channel_id}")
+    summary_lines.append(f"データ取得日: {data_date}（このツールで集計を行った日）")
+    summary_lines.append(f"チャンネルID: {channel_id}（UCから始まる固有ID）")
     summary_lines.append(f"チャンネル名: {basic.get('title')}")
-    summary_lines.append(f"登録者数: {subs}")
-    summary_lines.append(f"動画本数: {vids_total}")
-    summary_lines.append(f"総再生回数: {views_total}")
+    summary_lines.append(f"登録者数: {subs}（現在の登録者総数）")
+    summary_lines.append(f"動画本数: {vids_total}（公開済み動画の本数）")
+    summary_lines.append(f"総再生回数: {views_total}（公開済み動画の累計再生数）")
     summary_lines.append(
         f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
-        
+        "（チャンネル作成日）"
     )
     summary_lines.append(
         f"活動月数: {months_active if months_active is not None else '-'}"
-        
+        "（チャンネル開設からの日数 ÷ 30 を概算）"
     )
     summary_lines.append("")
 
@@ -432,11 +402,9 @@ if run_btn:
         st.write(f"総再生回数: {views_total}")
         st.write(
             f"活動開始日: {published_dt.strftime('%Y-%m-%d') if published_dt else '不明'}"
-            "（チャンネル作成日）"
         )
         st.write(
             f"活動月数: {months_active if months_active is not None else '-'}"
-            
         )
 
         st.subheader("集計")
@@ -479,14 +447,7 @@ if run_btn:
         summary_lines.append("直近10日 トップ動画:")
         if top_video_id:
             url_10 = f"https://www.youtube.com/watch?v={top_video_id}"
-            st.markdown(
-                f"- [{top_title_last10}]({url_10}) — "
-                f"views: {top_views_last10}"
-                f"<span class='metric-note'>（この動画単体の再生数）</span> "
-                f"| share: {top_share_last10*100:.2f}%"
-                f"<span class='metric-note'>（直近10日の合計再生数に占める割合）</span>",
-                unsafe_allow_html=True,
-            )
+            st.write(f"- {top_title_last10} — views: {top_views_last10} | share: {top_share_last10*100:.2f}%")
             summary_lines.append(
                 f"- {top_title_last10} — "
                 f"views: {top_views_last10}（この動画単体の再生数） | "
@@ -528,14 +489,7 @@ if run_btn:
         summary_lines.append("直近30日 トップ動画:")
         if top_video_id_30:
             url_30 = f"https://www.youtube.com/watch?v={top_video_id_30}"
-            st.markdown(
-                f"- [{top_title_last30}]({url_30}) — "
-                f"views: {top_views_last30}"
-                f"<span class='metric-note'>（この動画単体の再生数）</span> "
-                f"| share: {top_share_last30*100:.2f}%"
-                f"<span class='metric-note'>（直近30日の合計再生数に占める割合）</span>",
-                unsafe_allow_html=True,
-            )
+            st.write(f"- {top_title_last30} — views: {top_views_last30} | share: {top_share_last30*100:.2f}%")
             summary_lines.append(
                 f"- {top_title_last30} — "
                 f"views: {top_views_last30}（この動画単体の再生数） | "
@@ -620,7 +574,15 @@ if run_btn:
 
         components.html(
             f"""
-            <button class="copy-btn" onclick="copyToClipboard()">集計結果をコピー</button>
+            <button onclick="copyToClipboard()" style="
+                background-color: #FF4B4B;
+                color: white;
+                border: none;
+                padding: 0.25rem 0.75rem;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                font-size: 0.9rem;
+            ">集計結果をコピー</button>
             <script>
             function copyToClipboard() {{
                 const text = {json.dumps(summary_text)};
@@ -641,4 +603,3 @@ if run_btn:
         )
 
     st.success("集計が完了しました。上部のボタンからTXTダウンロード / コピーができます。")
-
